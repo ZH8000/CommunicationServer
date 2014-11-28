@@ -1,0 +1,8 @@
+project/project/
+project/target/
+target/
+src/main/resources/*.props
+src/main/resources/props/*
+*.swp
+*.swo
+
