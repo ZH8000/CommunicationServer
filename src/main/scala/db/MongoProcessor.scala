@@ -39,7 +39,7 @@ class MongoProcessor(mongoClient: MongoClient) {
     val workerMongoID = record.workID
 
     val query = MongoDBObject(
-      "timestamp"     -> dateFormatter.format(record.embDate * 100).substring(0, 10), 
+      "timestamp"     -> dateFormatter.format(record.embDate * 1000).substring(0, 10), 
       "workerMongoID" -> workerMongoID,
       "machineID"     -> record.machID
     )
@@ -51,7 +51,7 @@ class MongoProcessor(mongoClient: MongoClient) {
   def updateDailyOrder(record: Record) {
 
     //! Fix to real barcode data
-    val timestamp = dateFormatter.format(record.embDate * 100).substring(0, 10)
+    val timestamp = dateFormatter.format(record.embDate * 1000).substring(0, 10)
     val lotNo = record.lotNo
     val order = record.orderType
     val customer = ""
