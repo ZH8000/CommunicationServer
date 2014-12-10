@@ -33,6 +33,71 @@ class MongoProcessor(mongoClient: MongoClient) {
     dailyDB(record.insertDate).insert(record.toMongoObject)
   }
 
+  def updateWorkerDaily(record: Record) {
+
+    //! Fix to real barcode data
+    val workerMongoID = record.workID
+
+    val query = MongoDBObject(
+      "timestamp"     -> dateFormatter.format(record.embDate * 100).substring(0, 10), 
+      "workerMongoID" -> workerMongoID,
+      "machineID"     -> record.machID
+    )
+
+    zhenhaiDB("workerDaily").update(query, $inc("count_qty" -> record.countQty), upsert = true)
+    zhenhaiDB("workerDaily").ensureIndex(query.mapValues(x => 1))
+  }
+
+  def updateDailyOrder(record: Record) {
+
+    //! Fix to real barcode data
+    val timestamp = dateFormatter.format(record.embDate * 100).substring(0, 10)
+    val lotNo = record.lotNo
+    val order = record.orderType
+    val customer = ""
+    val status = record.machineStatus
+
+    val query = MongoDBObject(
+      "timestamp" -> timestamp,
+      "lotNo" -> lotNo,
+      "order" -> order,
+      "customer" -> customer,
+      "product" -> record.product,
+      "status" -> status
+    )
+
+    zhenhaiDB("dailyOrder").update(query, $inc("count_qty" -> record.countQty), upsert = true)
+    zhenhaiDB("dailyOrder").ensureIndex(query.mapValues(x => 1))
+  }
+
+  def updateOrderStatus(record: Record) {
+
+    //! Fix to real barcode data
+    val timestamp = record.embDate
+    val order = record.orderType
+    val customer = ""
+    val fieldName = MachineInfo.getMachineTypeID(record.machID) match {
+      case 1 => "step1"
+      case 2 => "step2"
+      case 3 => "step3"
+      case 4 => "step4"
+      case 5 => "step5"
+      case 6 => "step6"
+      case _ => "unknownStep"
+    }
+
+    val query = MongoDBObject(
+      "customer" -> customer,
+      "order" -> order,
+      "product" -> record.product,
+      "inputCount" -> record.workQty
+    )
+
+    zhenhaiDB("orderStatus").update(query, $inc(fieldName -> record.countQty), upsert = true)
+    zhenhaiDB("orderStatus").update(query, $set("lastUpdated" -> record.embDate), upsert = true)
+    zhenhaiDB("orderStatus").ensureIndex(query.mapValues(x => 1))
+  }
+
   def addRecord(record: Record, isImportFromDaily: Boolean = false) {
     val tenMinute = dateFormatter.format(record.embDate * 1000).substring(0, 15) + "0"
 
@@ -47,7 +112,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       query = MongoDBObject(
         "timestamp" -> record.insertDate, 
         "shiftDate" -> record.shiftDate, 
-        "mach_id" -> record.machID
+        "mach_id"   -> record.machID
       ), 
       record = record
     )
@@ -56,8 +121,8 @@ class MongoProcessor(mongoClient: MongoClient) {
       tableName = record.insertDate, 
       query = MongoDBObject(
         "timestamp" -> tenMinute, 
-        "product" -> record.product, 
-        "mach_id" -> record.machID, 
+        "product"   -> record.product, 
+        "mach_id"   -> record.machID, 
         "defact_id" -> record.defactID
       ), 
       record = record
@@ -67,8 +132,8 @@ class MongoProcessor(mongoClient: MongoClient) {
       tableName = s"shift-${record.shiftDate}", 
       query = MongoDBObject(
         "timestamp" -> tenMinute, 
-        "product" -> record.product, 
-        "mach_id" -> record.machID, 
+        "product"   -> record.product, 
+        "mach_id"   -> record.machID, 
         "defact_id" -> record.defactID
       ), 
       record = record
@@ -79,7 +144,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       query = MongoDBObject(
         "timestamp" -> record.insertDate, 
         "shiftDate" -> record.shiftDate, 
-        "mach_id" -> record.machID, 
+        "mach_id"   -> record.machID, 
         "defact_id" -> record.defactID
       ), 
       record = record
@@ -90,7 +155,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       query = MongoDBObject(
         "timestamp" -> record.insertDate, 
         "shiftDate" -> record.shiftDate, 
-        "mach_id" -> record.machID
+        "mach_id"   -> record.machID
       ), 
       record = record
     )
@@ -98,14 +163,16 @@ class MongoProcessor(mongoClient: MongoClient) {
     update(
       tableName = "reasonByMachine", 
       query = MongoDBObject(
-        "mach_id" -> record.machID,
+        "mach_id"    -> record.machID,
         "mach_model" -> MachineInfo.getModel(record.machID),
-        "mach_type" -> MachineInfo.getMachineType(record.machID)
+        "mach_type"  -> MachineInfo.getMachineType(record.machID)
       ), 
       record = record
     )
 
-    // zhenhaiDB("data").insert(record.toMongoObject)
+    updateWorkerDaily(record)
+    updateDailyOrder(record)
+    updateOrderStatus(record)
 
     if (!isImportFromDaily) {
       dailyDB(record.insertDate).insert(record.toMongoObject)
