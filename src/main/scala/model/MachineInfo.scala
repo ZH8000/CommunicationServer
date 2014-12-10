@@ -231,6 +231,7 @@ object MachineInfo {
 
   def getProduct(machineID: String) = productMapping.get(machineID).getOrElse("Unknow")
   def getModel(machineID: String) = machineModel.get(machineID).map(_._1).getOrElse("Unknown")
+  def getMachineTypeID(machineID: String) = machineModel.get(machineID).map(_._2).getOrElse(-1)
   def getMachineType(machineID: String) = {
     for {
       machModel <- machineModel.get(machineID).map(_._2)
