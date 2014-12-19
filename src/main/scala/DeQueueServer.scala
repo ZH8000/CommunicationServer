@@ -40,7 +40,7 @@ class DeQueueServerThread extends Thread {
 
   override def run() {
 
-    KeepRetry {
+    KeepRetry(60) {
 
       val (channel, consumer) = initRabbitMQ()
       var recordCount: Long = 0

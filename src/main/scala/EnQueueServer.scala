@@ -66,7 +66,7 @@ class EnQueueServerThread extends Thread {
   override def run() {
 
 
-    KeepRetry {
+    KeepRetry(5) {
 
       var counter = 0L
 
