@@ -24,6 +24,7 @@ class MongoProcessor(mongoClient: MongoClient) {
     val tenMinute = dateFormatter.format(record.embDate * 1000).substring(0, 15) + "0"
 
     val query = MongoDBObject(
+      "date"      -> tenMinute.substring(0, 10),
       "timestamp" -> tenMinute,
       "mach_id"   -> record.machID,
       "defact_id" -> record.defactID
@@ -38,7 +39,11 @@ class MongoProcessor(mongoClient: MongoClient) {
 
     update(
       tableName = "product", 
-      query = MongoDBObject("product" -> record.product), 
+      query = MongoDBObject(
+        "product" -> record.product,
+        "machineTypeTitle" -> record.machineTypeTitle,
+        "capacityRange" -> record.capacityRange
+      ), 
       record = record
     )
 
@@ -47,7 +52,9 @@ class MongoProcessor(mongoClient: MongoClient) {
       query = MongoDBObject(
         "timestamp" -> record.insertDate, 
         "shiftDate" -> record.shiftDate, 
-        "mach_id" -> record.machID
+        "mach_id" -> record.machID,
+        "machineTypeTitle" -> record.machineTypeTitle,
+        "capacityRange" -> record.capacityRange
       ), 
       record = record
     )
@@ -96,6 +103,18 @@ class MongoProcessor(mongoClient: MongoClient) {
     )
 
     update(
+      tableName = "dailyByMachineType", 
+      query = MongoDBObject(
+        "timestamp" -> record.insertDate, 
+        "shiftDate" -> record.shiftDate, 
+        "mach_id" -> record.machID,
+        "machineTypeTitle" -> record.machineTypeTitle,
+        "capacityRange" -> record.capacityRange
+      ), 
+      record = record
+    )
+
+    update(
       tableName = "reasonByMachine", 
       query = MongoDBObject(
         "mach_id" -> record.machID,
@@ -104,8 +123,6 @@ class MongoProcessor(mongoClient: MongoClient) {
       ), 
       record = record
     )
-
-    // zhenhaiDB("data").insert(record.toMongoObject)
 
     if (!isImportFromDaily) {
       dailyDB(record.insertDate).insert(record.toMongoObject)

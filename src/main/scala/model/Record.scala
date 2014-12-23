@@ -45,6 +45,23 @@ case class Record(
     "mac_address" -> macAddress,
     "shiftDate" -> shiftDate
   )
+
+
+  def capacityPrefix = product.split("x") match {
+    case Array(first, second) => first.toDouble
+    case Array(first) => first.toDouble
+  }
+
+  def capacityRange = capacityPrefix match {
+    case x if x >= 5 && x <= 8      => "5 - 8"
+    case x if x >=10 && x <= 12.5   => "10 - 12.5"
+    case x if x >=16 && x <= 18     => "16 - 18"
+  }
+
+  def machineTypeTitle: Option[String] = for {
+    (model, machineType) <- MachineInfo.machineModel.get(this.machID)
+    machineTypeTitle <- MachineInfo.machineType.get(machineType)
+  } yield machineTypeTitle
 }
 
 object Record {
