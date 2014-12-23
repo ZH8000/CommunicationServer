@@ -13,7 +13,6 @@ object DailyImport {
   val mongoProcessor = new MongoProcessor(mongoClient)
 
   def main(args: Array[String]) = {
-    println(args(0))
     val collection = mongoDB(args(0))
     var counter = 0
     val totalCount = collection.count()
@@ -23,8 +22,8 @@ object DailyImport {
       println(s"Processing record [$counter / $totalCount] ....")
 
       record.countQty match {
-        case -1 => mongoProcessor.addMachineAlert(record)
-        case  n => mongoProcessor.addRecord(record)
+        case -1 => mongoProcessor.addMachineAlert(record, isImportFromDaily = true)
+        case  n => mongoProcessor.addRecord(record, isImportFromDaily = true)
       }
 
       counter += 1

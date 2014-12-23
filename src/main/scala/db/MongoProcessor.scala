@@ -19,7 +19,7 @@ class MongoProcessor(mongoClient: MongoClient) {
     zhenhaiDB(tableName).update(query, operation, upsert = true)
   }
 
-  def addMachineAlert(record: Record) {
+  def addMachineAlert(record: Record, isImportFromDaily: Boolean = false) {
 
     val tenMinute = dateFormatter.format(record.embDate * 1000).substring(0, 15) + "0"
 
@@ -30,7 +30,9 @@ class MongoProcessor(mongoClient: MongoClient) {
     )
 
     zhenhaiDB("alert").update(query, query, upsert = true);
-    dailyDB(record.insertDate).insert(record.toMongoObject)
+    if (!isImportFromDaily) {
+      dailyDB(record.insertDate).insert(record.toMongoObject)
+    }
   }
 
   def updateWorkerDaily(record: Record) {
