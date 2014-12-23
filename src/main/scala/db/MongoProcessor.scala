@@ -164,17 +164,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       query = MongoDBObject(
         "timestamp" -> record.insertDate, 
         "shiftDate" -> record.shiftDate, 
-        "mach_id"   -> record.machID
-      ), 
-      record = record
-    )
-
-    update(
-      tableName = "dailyByMachineType", 
-      query = MongoDBObject(
-        "timestamp" -> record.insertDate, 
-        "shiftDate" -> record.shiftDate, 
-        "mach_id" -> record.machID,
+        "mach_id"   -> record.machID,
         "machineTypeTitle" -> record.machineTypeTitle,
         "capacityRange" -> record.capacityRange
       ), 

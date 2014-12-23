@@ -229,7 +229,7 @@ object MachineInfo {
     "E49-S8" -> ("SPH-3000", 2)
   )
 
-  def getProduct(machineID: String) = productMapping.get(machineID).getOrElse("Unknow")
+  def getProduct(machineID: String) = productMapping.get(machineID).getOrElse("Unknown")
   def getModel(machineID: String) = machineModel.get(machineID).map(_._1).getOrElse("Unknown")
   def getMachineTypeID(machineID: String) = machineModel.get(machineID).map(_._2).getOrElse(-1)
   def getMachineType(machineID: String) = {

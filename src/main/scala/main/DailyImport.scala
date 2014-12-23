@@ -18,12 +18,18 @@ object DailyImport {
     val totalCount = collection.count()
 
     collection.find.foreach { doc =>
+
       val record = Record(doc)
+      val fixedRecord = record.product match {
+        case "Unknow" => record.copy(product = "Unknown")
+        case _        => record
+      }
+
       println(s"Processing record [$counter / $totalCount] ....")
 
-      record.countQty match {
-        case -1 => mongoProcessor.addMachineAlert(record, isImportFromDaily = true)
-        case  n => mongoProcessor.addRecord(record, isImportFromDaily = true)
+      fixedRecord.countQty match {
+        case -1 => mongoProcessor.addMachineAlert(fixedRecord, isImportFromDaily = true)
+        case  n => mongoProcessor.addRecord(fixedRecord, isImportFromDaily = true)
       }
 
       counter += 1
