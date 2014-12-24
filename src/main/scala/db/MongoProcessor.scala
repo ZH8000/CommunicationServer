@@ -132,7 +132,9 @@ class MongoProcessor(mongoClient: MongoClient) {
         "timestamp" -> tenMinute, 
         "product"   -> record.product, 
         "mach_id"   -> record.machID, 
-        "defact_id" -> record.defactID
+        "defact_id" -> record.defactID,
+        "machineTypeTitle" -> record.machineTypeTitle,
+        "capacityRange" -> record.capacityRange
       ), 
       record = record
     )
@@ -143,7 +145,9 @@ class MongoProcessor(mongoClient: MongoClient) {
         "timestamp" -> tenMinute, 
         "product"   -> record.product, 
         "mach_id"   -> record.machID, 
-        "defact_id" -> record.defactID
+        "defact_id" -> record.defactID,
+        "machineTypeTitle" -> record.machineTypeTitle,
+        "capacityRange" -> record.capacityRange
       ), 
       record = record
     )
