@@ -63,6 +63,7 @@ case class Record(
   }
 
   def machineTypeTitle: String = MachineInfo.getMachineType(this.machID)
+  def customer = "康舒"
 }
 
 object Record {
