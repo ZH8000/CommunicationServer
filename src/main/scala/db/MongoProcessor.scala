@@ -77,12 +77,11 @@ class MongoProcessor(mongoClient: MongoClient) {
     val timestamp = record.embDate
     val customer = record.customer
     val fieldName = MachineInfo.getMachineTypeID(record.machID) match {
-      case 1 => "step1"
-      case 2 => "step2"
-      case 3 => "step3"
-      case 4 => "step4"
-      case 5 => "step5"
-      case 6 => "step6"
+      case 1 => "step1" // 加締
+      case 2 => "step2" // 組立
+      case 3 => "step3" // 老化
+      case 4 => "step4" // 選別
+      case 5 => "step5" // 加工切角
       case _ => "unknownStep"
     }
 
