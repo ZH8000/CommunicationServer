@@ -104,7 +104,7 @@ object InsertDummyData {
 
 	if (timeStop >= (randomStopMax * 0.75)) {
 	  val errorCount = randomErrorQty
-	  val defactID = Random.shuffle(step2DefactID).head
+	  val defactID = Random.shuffle(step3DefactID).head
   	  val record = Record(
 	    "0", lotNo, stopCount, 0, currentTimestamp, errorCount, 
   	    "192.168.0.0", defactID, step3, worker3, "0", "0", "0", "0", product, timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
