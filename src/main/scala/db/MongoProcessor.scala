@@ -47,7 +47,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       "machineID"     -> record.machID
     )
 
-    zhenhaiDB("workerDaily").update(query, $inc("count_qty" -> record.countQty), upsert = true)
+    zhenhaiDB("workerDaily").update(query, $inc("countQty" -> record.countQty), upsert = true)
     zhenhaiDB("workerDaily").ensureIndex(query.mapValues(x => 1))
   }
 
