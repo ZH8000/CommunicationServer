@@ -5,6 +5,7 @@ import tw.com.zhenhai.db._
 
 import com.mongodb.casbah.Imports._
 import org.slf4j.LoggerFactory
+import scala.util.Random
 
 object DailyImport {
 
