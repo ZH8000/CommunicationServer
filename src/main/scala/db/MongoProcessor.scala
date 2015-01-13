@@ -98,7 +98,12 @@ class MongoProcessor(mongoClient: MongoClient) {
   }
 
   def addRecord(record: Record, isImportFromDaily: Boolean = false) {
+
     val tenMinute = dateFormatter.format(record.embDate * 1000).substring(0, 15) + "0"
+
+    if (record.countQty >= 2000 || record.badQty >= 2000) {
+      zhenhaiDB("strangeQty").insert(record.toMongoObject)
+    }
 
     update(
       tableName = "product", 

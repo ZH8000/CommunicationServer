@@ -357,7 +357,7 @@ object MachineInfo {
     MachineInfo("192.168.10.246", "A20",    3, "CS-210",      None),
     MachineInfo("192.168.10.247", "A21",    3, "CS-210",      None),
     MachineInfo("192.168.10.248", "A22",    3, "CS-210",      None),
-    MachineInfo("192.168.10.249", "A23",    3, "ATS- 720",    None),
+    MachineInfo("192.168.10.249", "A23",    3, "ATS-720",    None),
     MachineInfo("192.168.10.250", "A24",    3, "CS-206",      None),
     MachineInfo("192.168.10.251", "A25",    3, "CS-206",      None),
     MachineInfo("192.168.10.252", "A26",    3, "CS-206",      None),
