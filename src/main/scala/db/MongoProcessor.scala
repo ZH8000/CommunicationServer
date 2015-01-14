@@ -11,7 +11,8 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   val zhenhaiDB = mongoClient("zhenhai")
   val dailyDB = mongoClient("zhenhaiDaily")
-  val dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm")
+  val dateTimeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm")
+  val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
 
   def update(tableName: String, query: MongoDBObject, record: Record) {
     val operation = $inc("bad_qty" -> record.badQty, "count_qty" -> record.countQty)
@@ -21,7 +22,7 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   def addMachineAlert(record: Record, isImportFromDaily: Boolean = false) {
 
-    val tenMinute = dateFormatter.format(record.embDate * 1000).substring(0, 15) + "0"
+    val tenMinute = dateTimeFormatter.format(record.embDate * 1000).substring(0, 15) + "0"
 
     val query = MongoDBObject(
       "date"      -> tenMinute.substring(0, 10),
@@ -42,7 +43,7 @@ class MongoProcessor(mongoClient: MongoClient) {
     val workerMongoID = record.workID
 
     val query = MongoDBObject(
-      "timestamp"     -> dateFormatter.format(record.embDate * 1000).substring(0, 10), 
+      "timestamp"     -> dateTimeFormatter.format(record.embDate * 1000).substring(0, 10), 
       "workerMongoID" -> workerMongoID,
       "machineID"     -> record.machID
     )
@@ -54,7 +55,7 @@ class MongoProcessor(mongoClient: MongoClient) {
   def updateDailyOrder(record: Record) {
 
     //! Fix to real barcode data
-    val timestamp = dateFormatter.format(record.embDate * 1000).substring(0, 10)
+    val timestamp = dateTimeFormatter.format(record.embDate * 1000).substring(0, 10)
     val lotNo = record.lotNo
     val customer = record.customer
     val status = record.machineStatus
@@ -99,7 +100,7 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   def addRecord(record: Record, isImportFromDaily: Boolean = false) {
 
-    val tenMinute = dateFormatter.format(record.embDate * 1000).substring(0, 15) + "0"
+    val tenMinute = dateTimeFormatter.format(record.embDate * 1000).substring(0, 15) + "0"
 
     if (record.countQty >= 2000 || record.badQty >= 2000) {
       zhenhaiDB("strangeQty").insert(record.toMongoObject)
@@ -185,6 +186,19 @@ class MongoProcessor(mongoClient: MongoClient) {
       ), 
       record = record
     )
+
+    if (record.badQty > 0) {
+      update(
+        tableName = "topReason", 
+        query = MongoDBObject(
+          "mach_id"    -> record.machID,
+          "mach_model" -> MachineInfo.getModel(record.machID),
+          "defact_id"  -> record.defactID,
+          "date"       -> dateFormatter.format(new Date(record.embDate * 1000))
+        ), 
+        record = record
+      )
+    }
 
     updateWorkerDaily(record)
     updateDailyOrder(record)
