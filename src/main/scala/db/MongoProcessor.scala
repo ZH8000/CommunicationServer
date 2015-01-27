@@ -57,13 +57,11 @@ class MongoProcessor(mongoClient: MongoClient) {
     //! Fix to real barcode data
     val timestamp = dateTimeFormatter.format(record.embDate * 1000).substring(0, 10)
     val lotNo = record.lotNo
-    val customer = record.customer
     val status = record.machineStatus
 
     val query = MongoDBObject(
       "timestamp" -> timestamp,
       "lotNo" -> lotNo,
-      "customer" -> customer,
       "product" -> record.product,
       "status" -> status
     )
@@ -76,7 +74,6 @@ class MongoProcessor(mongoClient: MongoClient) {
 
     //! Fix to real barcode data
     val timestamp = record.embDate
-    val customer = record.customer
     val fieldName = MachineInfo.getMachineTypeID(record.machID) match {
       case 1 => "step1" // 加締
       case 2 => "step2" // 組立
@@ -87,7 +84,6 @@ class MongoProcessor(mongoClient: MongoClient) {
     }
 
     val query = MongoDBObject(
-      "customer" -> customer,
       "lotNo" -> record.lotNo,
       "product" -> record.product,
       "inputCount" -> record.workQty
