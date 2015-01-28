@@ -11,7 +11,6 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   val zhenhaiDB = mongoClient("zhenhai")
   val dailyDB = mongoClient("zhenhaiDaily")
-  val dateTimeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm")
   val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
 
   def update(tableName: String, query: MongoDBObject, record: Record) {
@@ -22,11 +21,9 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   def addMachineAlert(record: Record, isImportFromDaily: Boolean = false) {
 
-    val tenMinute = dateTimeFormatter.format(record.embDate * 1000).substring(0, 15) + "0"
-
     val query = MongoDBObject(
-      "date"      -> tenMinute.substring(0, 10),
-      "timestamp" -> tenMinute,
+      "date"      -> record.tenMinute.substring(0, 10),
+      "timestamp" -> record.tenMinute,
       "mach_id"   -> record.machID,
       "defact_id" -> record.defactID
     )
@@ -39,12 +36,10 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   def updateWorkerDaily(record: Record) {
 
-    //! Fix to real barcode data
-    val workerMongoID = record.workID
-
     val query = MongoDBObject(
-      "timestamp"     -> dateTimeFormatter.format(record.embDate * 1000).substring(0, 10), 
-      "workerMongoID" -> workerMongoID,
+      "timestamp"     -> record.insertDate, 
+      "shiftDate"     -> record.shiftDate,
+      "workerMongoID" -> record.workID,
       "machineID"     -> record.machID
     )
 
@@ -54,16 +49,12 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   def updateDailyOrder(record: Record) {
 
-    //! Fix to real barcode data
-    val timestamp = dateTimeFormatter.format(record.embDate * 1000).substring(0, 10)
-    val lotNo = record.lotNo
-    val status = record.machineStatus
-
     val query = MongoDBObject(
-      "timestamp" -> timestamp,
-      "lotNo" -> lotNo,
+      "timestamp" -> record.insertDate,
+      "shiftDate" -> record.shiftDate,
+      "lotNo" -> record.lotNo,
       "product" -> record.product,
-      "status" -> status
+      "status" -> record.machineStatus
     )
 
     zhenhaiDB("dailyOrder").update(query, $inc("count_qty" -> record.countQty), upsert = true)
@@ -96,8 +87,6 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   def addRecord(record: Record, isImportFromDaily: Boolean = false) {
 
-    val tenMinute = dateTimeFormatter.format(record.embDate * 1000).substring(0, 15) + "0"
-
     if (record.countQty >= 2000 || record.badQty >= 2000) {
       zhenhaiDB("strangeQty").insert(record.toMongoObject)
     }
@@ -127,7 +116,7 @@ class MongoProcessor(mongoClient: MongoClient) {
     update(
       tableName = record.insertDate, 
       query = MongoDBObject(
-        "timestamp" -> tenMinute, 
+        "timestamp" -> record.tenMinute, 
         "product"   -> record.product, 
         "mach_id"   -> record.machID, 
         "defact_id" -> record.defactID,
@@ -140,7 +129,7 @@ class MongoProcessor(mongoClient: MongoClient) {
     update(
       tableName = s"shift-${record.shiftDate}", 
       query = MongoDBObject(
-        "timestamp" -> tenMinute, 
+        "timestamp" -> record.tenMinute, 
         "product"   -> record.product, 
         "mach_id"   -> record.machID, 
         "defact_id" -> record.defactID,
@@ -190,7 +179,8 @@ class MongoProcessor(mongoClient: MongoClient) {
           "mach_id"    -> record.machID,
           "mach_model" -> MachineInfo.getModel(record.machID),
           "defact_id"  -> record.defactID,
-          "date"       -> dateFormatter.format(new Date(record.embDate * 1000))
+          "date"       -> record.insertDate,
+          "shiftDate"  -> record.shiftDate
         ), 
         record = record
       )

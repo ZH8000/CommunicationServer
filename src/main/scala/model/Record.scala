@@ -72,6 +72,11 @@ case class Record(
   }
 
   def machineTypeTitle: String = MachineInfo.getMachineType(this.machID)
+
+  lazy val tenMinute = {
+    val dateTimeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm")
+    dateTimeFormatter.format(embDate * 1000).substring(0, 15) + "0"
+  }
 }
 
 object Record {
