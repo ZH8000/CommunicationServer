@@ -6,8 +6,8 @@ import com.mongodb.casbah.Imports._
 import scala.util.Try
 
 case class Record(
-  orderType: String, 
-  lotNo: String, 
+  rawLotNo: String, 
+  rawPartNo: String, 
   workQty: Long, 
   countQty: Long,
   embDate: Long, 
@@ -20,13 +20,22 @@ case class Record(
   dx: String,
   lc: String,
   machineStatus: String,
-  product: String,
   insertDate: String,
   macAddress: String,
   shiftDate: String
 ) {
+
+  lazy val isFromBarcode = rawLotNo.trim != "01"
+
+  def lotNo = if (!isFromBarcode) rawPartNo else rawLotNo
+  def partNo = if (!isFromBarcode) "none" else rawPartNo
+  def product = isFromBarcode match {
+    case true  => "" //! Get product from Barcode!!!
+    case false => MachineInfo.getProduct(machID)
+  }
+
   def toMongoObject = MongoDBObject(
-    "order_type" -> orderType,
+    "part_no" -> partNo,
     "lot_no" -> lotNo,
     "work_qty" -> workQty,
     "count_qty" -> countQty, 
@@ -82,7 +91,6 @@ object Record {
     dbObject("DX").toString,
     dbObject("LC").toString,
     dbObject("mach_status").toString,
-    dbObject("product").toString,
     dbObject("insertDate").toString,
     dbObject("mac_address").toString,
     dbObject("shiftDate").toString
@@ -114,7 +122,6 @@ object Record {
       columns(11),
       columns(12),
       columns(13),
-      MachineInfo.getProduct(machineID),
       dateFormatter.format(new Date(timestamp * 1000)),
       Try{columns(14)}.getOrElse(""),
       dateFormatter.format(getShiftTime(timestamp))

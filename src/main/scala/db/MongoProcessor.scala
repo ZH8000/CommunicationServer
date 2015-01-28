@@ -196,9 +196,12 @@ class MongoProcessor(mongoClient: MongoClient) {
       )
     }
 
-    updateWorkerDaily(record)
-    updateDailyOrder(record)
-    updateOrderStatus(record)
+
+    if (record.isFromBarcode) {
+      updateWorkerDaily(record)
+      updateDailyOrder(record)
+      updateOrderStatus(record)
+    }
 
     if (!isImportFromDaily) {
       dailyDB(record.insertDate).insert(record.toMongoObject)

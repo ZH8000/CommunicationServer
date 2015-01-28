@@ -40,7 +40,7 @@ object InsertDummyData {
 	val shiftDate = dateFormatter.format(Record.getShiftTime(currentTimestamp))
 	val record = Record(
 	  "0", lotNo, stopCount, countQty, currentTimestamp, 0, 
-	  "192.168.0.0", 8, step1, worker1, "0", "0", "0", "0", product, timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
+	  "192.168.0.0", 8, step1, worker1, "0", "0", "0", "0", timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
 	)
 
 	println(s"add step1[$step1Count / $stopCount] $record....")
@@ -51,7 +51,7 @@ object InsertDummyData {
 	  val defactID = Random.shuffle(step1DefactID).head
   	  val record = Record(
 	    "0", lotNo, stopCount, 0, currentTimestamp, errorCount, 
-  	    "192.168.0.0", defactID, step1, worker1, "0", "0", "0", "0", product, timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
+  	    "192.168.0.0", defactID, step1, worker1, "0", "0", "0", "0", timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
 	  )
 	  mongoProcessor.addRecord(record)
 	}
@@ -68,7 +68,7 @@ object InsertDummyData {
 	val shiftDate = dateFormatter.format(Record.getShiftTime(currentTimestamp))
 	val record = Record(
 	  "0", lotNo, stopCount, countQty, currentTimestamp, 0, 
-	  "192.168.0.0", 7, step2, worker2, "0", "0", "0", "0", product, timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
+	  "192.168.0.0", 7, step2, worker2, "0", "0", "0", "0", timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
 	)
 
 	println(s"add step2[$step2Count / $inputCount] $record....")
@@ -79,7 +79,7 @@ object InsertDummyData {
 	  val defactID = Random.shuffle(step2DefactID).head
   	  val record = Record(
 	    "0", lotNo, stopCount, 0, currentTimestamp, errorCount, 
-  	    "192.168.0.0", defactID, step2, worker2, "0", "0", "0", "0", product, timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
+  	    "192.168.0.0", defactID, step2, worker2, "0", "0", "0", "0", timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
 	  )
 	  mongoProcessor.addRecord(record)
 	}
@@ -96,7 +96,7 @@ object InsertDummyData {
 	val shiftDate = dateFormatter.format(Record.getShiftTime(currentTimestamp))
 	val record = Record(
 	  "0", lotNo, stopCount, countQty, currentTimestamp, 0, 
-	  "192.168.0.0", 16, step3, worker3, "0", "0", "0", "0", product, timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
+	  "192.168.0.0", 16, step3, worker3, "0", "0", "0", "0", timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
 	)
 
 	println(s"add step3[$step3Count / $inputCount] $record....")
@@ -107,7 +107,7 @@ object InsertDummyData {
 	  val defactID = Random.shuffle(step3DefactID).head
   	  val record = Record(
 	    "0", lotNo, stopCount, 0, currentTimestamp, errorCount, 
-  	    "192.168.0.0", defactID, step3, worker3, "0", "0", "0", "0", product, timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
+  	    "192.168.0.0", defactID, step3, worker3, "0", "0", "0", "0", timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
 	  )
 	  mongoProcessor.addRecord(record)
 	}
@@ -124,7 +124,7 @@ object InsertDummyData {
 	val shiftDate = dateFormatter.format(Record.getShiftTime(currentTimestamp))
 	val record = Record(
 	  "0", lotNo, stopCount, countQty, currentTimestamp, 0, 
-	  "192.168.0.0", 16, step4, worker4, "0", "0", "0", "0", product, timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
+	  "192.168.0.0", 16, step4, worker4, "0", "0", "0", "0", timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
 	)
 	println(s"add step4[$step4Count / $inputCount] $record....")
 
@@ -141,7 +141,7 @@ object InsertDummyData {
 	val shiftDate = dateFormatter.format(Record.getShiftTime(currentTimestamp))
 	val record = Record(
 	  "0", lotNo, stopCount, countQty, currentTimestamp, 0, 
-	  "192.168.0.0", 5, step5, worker5, "0", "0", "0", "0", product, timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
+	  "192.168.0.0", 5, step5, worker5, "0", "0", "0", "0", timestamp, "aa:aa:bb:cc:dd:ee", shiftDate
 	)
 
 	println(s"add step5[$step5Count / $inputCount] $record....")
