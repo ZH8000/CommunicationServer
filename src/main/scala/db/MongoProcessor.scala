@@ -14,7 +14,7 @@ class MongoProcessor(mongoClient: MongoClient) {
   val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
 
   def update(tableName: String, query: MongoDBObject, record: Record) {
-    val operation = $inc("bad_qty" -> record.badQty, "count_qty" -> record.countQty)
+    val operation = $inc("event_qty" -> record.eventQty, "count_qty" -> record.countQty)
     zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
     zhenhaiDB(tableName).update(query, operation, upsert = true)
   }
@@ -25,7 +25,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       "date"      -> record.tenMinute.substring(0, 10),
       "timestamp" -> record.tenMinute,
       "mach_id"   -> record.machID,
-      "defact_id" -> record.defactID
+      "eventID"   -> record.eventID
     )
 
     zhenhaiDB("alert").update(query, query, upsert = true);
@@ -52,6 +52,7 @@ class MongoProcessor(mongoClient: MongoClient) {
     val query = MongoDBObject(
       "timestamp" -> record.insertDate,
       "shiftDate" -> record.shiftDate,
+      "customer" -> record.customer,
       "lotNo" -> record.lotNo,
       "product" -> record.product,
       "status" -> record.machineStatus
@@ -77,6 +78,7 @@ class MongoProcessor(mongoClient: MongoClient) {
     val query = MongoDBObject(
       "lotNo" -> record.lotNo,
       "product" -> record.product,
+      "customer" -> record.customer,
       "inputCount" -> record.workQty
     )
 
@@ -87,7 +89,7 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   def addRecord(record: Record, isImportFromDaily: Boolean = false) {
 
-    if (record.countQty >= 2000 || record.badQty >= 2000) {
+    if (record.countQty >= 2000 || record.eventQty >= 2000) {
       zhenhaiDB("strangeQty").insert(record.toMongoObject)
     }
 
@@ -113,42 +115,112 @@ class MongoProcessor(mongoClient: MongoClient) {
       record = record
     )
 
-    update(
-      tableName = record.insertDate, 
-      query = MongoDBObject(
-        "timestamp" -> record.tenMinute, 
-        "product"   -> record.product, 
-        "mach_id"   -> record.machID, 
-        "defact_id" -> record.defactID,
-        "machineTypeTitle" -> record.machineTypeTitle,
-        "capacityRange" -> record.capacityRange
-      ), 
-      record = record
-    )
+    // 良品或不良事件
+    if (record.countQty > 0 || record.defactID != -1) {
 
-    update(
-      tableName = s"shift-${record.shiftDate}", 
-      query = MongoDBObject(
-        "timestamp" -> record.tenMinute, 
-        "product"   -> record.product, 
-        "mach_id"   -> record.machID, 
-        "defact_id" -> record.defactID,
-        "machineTypeTitle" -> record.machineTypeTitle,
-        "capacityRange" -> record.capacityRange
-      ), 
-      record = record
-    )
+      update(
+        tableName = record.insertDate, 
+        query = MongoDBObject(
+          "timestamp" -> record.tenMinute, 
+          "product"   -> record.product, 
+          "mach_id"   -> record.machID, 
+          "defact_id" -> record.defactID,
+          "machineTypeTitle" -> record.machineTypeTitle,
+          "capacityRange" -> record.capacityRange
+        ), 
+        record = record
+      )
 
-    update(
-      tableName = "dailyDefact", 
-      query = MongoDBObject(
-        "timestamp" -> record.insertDate, 
-        "shiftDate" -> record.shiftDate, 
-        "mach_id"   -> record.machID, 
-        "defact_id" -> record.defactID
-      ), 
-      record = record
-    )
+      update(
+        tableName = s"shift-${record.shiftDate}", 
+        query = MongoDBObject(
+          "timestamp" -> record.tenMinute, 
+          "product"   -> record.product, 
+          "mach_id"   -> record.machID, 
+          "defact_id" -> record.defactID,
+          "machineTypeTitle" -> record.machineTypeTitle,
+          "capacityRange" -> record.capacityRange
+        ), 
+        record = record
+      )
+
+      update(
+        tableName = "dailyDefact", 
+        query = MongoDBObject(
+          "timestamp" -> record.insertDate, 
+          "shiftDate" -> record.shiftDate, 
+          "mach_id"   -> record.machID, 
+          "defact_id" -> record.defactID
+        ), 
+        record = record
+      )
+    }
+
+    // 不良事件
+    if (record.eventQty > 0 && record.defactID != -1) {
+      update(
+        tableName = "topReason", 
+        query = MongoDBObject(
+          "mach_id"    -> record.machID,
+          "mach_model" -> MachineInfo.getModel(record.machID),
+          "defact_id"  -> record.defactID,
+          "date"       -> record.insertDate,
+          "shiftDate"  -> record.shiftDate
+        ), 
+        record = record
+      )
+
+      update(
+        tableName = "reasonByMachine", 
+        query = MongoDBObject(
+          "mach_id"    -> record.machID,
+          "mach_model" -> MachineInfo.getModel(record.machID),
+          "mach_type"  -> MachineInfo.getMachineType(record.machID)
+        ), 
+        record = record
+      )
+
+    }
+
+    // 其他統計事件
+    if (record.otherEventID != -1) {
+      update(
+        tableName = s"event-${record.insertDate}", 
+        query = MongoDBObject(
+          "timestamp" -> record.tenMinute, 
+          "product"   -> record.product, 
+          "mach_id"   -> record.machID, 
+          "other_event_id" -> record.otherEventID,
+          "machineTypeTitle" -> record.machineTypeTitle,
+          "capacityRange" -> record.capacityRange
+        ), 
+        record = record
+      )
+
+      update(
+        tableName = s"event-shift-${record.shiftDate}", 
+        query = MongoDBObject(
+          "timestamp" -> record.tenMinute, 
+          "product"   -> record.product, 
+          "mach_id"   -> record.machID, 
+          "other_event_id" -> record.otherEventID,
+          "machineTypeTitle" -> record.machineTypeTitle,
+          "capacityRange" -> record.capacityRange
+        ), 
+        record = record
+      )
+
+      update(
+        tableName = "dailyEvent", 
+        query = MongoDBObject(
+          "timestamp" -> record.insertDate, 
+          "shiftDate" -> record.shiftDate, 
+          "mach_id"   -> record.machID, 
+          "other_event_id" -> record.otherEventID
+        ), 
+        record = record
+      )
+    }
 
     update(
       tableName = "daily", 
@@ -162,31 +234,6 @@ class MongoProcessor(mongoClient: MongoClient) {
       record = record
     )
 
-    update(
-      tableName = "reasonByMachine", 
-      query = MongoDBObject(
-        "mach_id"    -> record.machID,
-        "mach_model" -> MachineInfo.getModel(record.machID),
-        "mach_type"  -> MachineInfo.getMachineType(record.machID)
-      ), 
-      record = record
-    )
-
-    if (record.badQty > 0) {
-      update(
-        tableName = "topReason", 
-        query = MongoDBObject(
-          "mach_id"    -> record.machID,
-          "mach_model" -> MachineInfo.getModel(record.machID),
-          "defact_id"  -> record.defactID,
-          "date"       -> record.insertDate,
-          "shiftDate"  -> record.shiftDate
-        ), 
-        record = record
-      )
-    }
-
-
     if (record.isFromBarcode) {
       updateWorkerDaily(record)
       updateDailyOrder(record)
@@ -198,5 +245,3 @@ class MongoProcessor(mongoClient: MongoClient) {
     }
   }
 }
-
-

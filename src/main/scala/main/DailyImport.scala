@@ -14,7 +14,7 @@ object DailyImport {
   val mongoProcessor = new MongoProcessor(mongoClient)
 
   def main(args: Array[String]) = {
-    val collection = mongoDB(args(0))
+    val collection = mongoDB("2015-01-31")
     var counter = 0
     val totalCount = collection.count()
 

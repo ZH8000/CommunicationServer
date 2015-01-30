@@ -62,7 +62,7 @@ class DeQueueServerThread extends Thread {
               case  n => mongoProcessor.addRecord(record)
             }
 
-            if (record.countQty == 0 && record.badQty == 0) {
+            if (record.countQty == 0 && record.eventQty == 0) {
               logger.info(s" [!] [strange] DeQueue: $message")
             }
           }

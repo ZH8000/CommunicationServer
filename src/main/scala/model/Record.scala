@@ -11,9 +11,9 @@ case class Record(
   workQty: Long, 
   countQty: Long,
   embDate: Long, 
-  badQty: Long,
+  eventQty: Long,
   machineIP: String,
-  defactID: Long,
+  eventID: Long,
   machID: String,
   workID: String,
   cx: String,
@@ -50,13 +50,36 @@ case class Record(
     radius + "x" + height
   }
 
+  val defactID = {
+
+    val defactIDOption = for {
+      machineModel      <- MachineInfo.machineModel.get(machID)
+      eventIDToDefactID <- MachineInfo.defactEventTable.get(machineModel)
+      defactID          <- eventIDToDefactID.get(eventID.toInt)
+    } yield defactID
+
+    defactIDOption.getOrElse(-1)
+  }
+
+  val otherEventID = {
+
+    val otherEventIDOption = for {
+      machineModel            <- MachineInfo.machineModel.get(machID)
+      eventIDToOtherEventID   <- MachineInfo.otherEventTable.get(machineModel)
+      otherEventID            <- eventIDToOtherEventID.get(eventID.toInt)
+    } yield otherEventID
+
+    otherEventIDOption.getOrElse(-1)
+  }
+
+
   def toMongoObject = MongoDBObject(
     "part_no" -> partNo,
     "lot_no" -> lotNo,
     "work_qty" -> workQty,
     "count_qty" -> countQty, 
     "emb_date" -> embDate,
-    "bad_qty" -> badQty,
+    "event_qty" -> eventQty,
     "mach_ip" -> machineIP,
     "defact_id" -> defactID,
     "mach_id" -> machID,
@@ -99,25 +122,31 @@ case class Record(
 
 object Record {
 
-  def apply(dbObject: DBObject) = new Record(
-    dbObject("order_type").toString,
-    dbObject("lot_no").toString,
-    dbObject("work_qty").toString.toLong,
-    dbObject("count_qty").toString.toLong,
-    dbObject("emb_date").toString.toLong,
-    dbObject("bad_qty").toString.toLong,
-    dbObject("mach_ip").toString,
-    dbObject("defact_id").toString.toLong,
-    dbObject("mach_id").toString,
-    dbObject("work_id").toString,
-    dbObject("CX").toString,
-    dbObject("DX").toString,
-    dbObject("LC").toString,
-    dbObject("mach_status").toString,
-    dbObject("insertDate").toString,
-    dbObject("mac_address").toString,
-    dbObject("shiftDate").toString
-  )
+  def apply(dbObject: DBObject) = {
+
+    val rawLotNo = if (dbObject("part_no").toString == "none") "01" else dbObject("part_no").toString
+    val rawPartNo = if (dbObject("part_no").toString == "none") dbObject("part_no").toString else dbObject("lot_no").toString
+
+    new Record(
+      rawLotNo,
+      rawPartNo,
+      dbObject("work_qty").toString.toLong,
+      dbObject("count_qty").toString.toLong,
+      dbObject("emb_date").toString.toLong,
+      dbObject("event_qty").toString.toLong,
+      dbObject("mach_ip").toString,
+      dbObject("defact_id").toString.toLong,
+      dbObject("mach_id").toString,
+      dbObject("work_id").toString,
+      dbObject("CX").toString,
+      dbObject("DX").toString,
+      dbObject("LC").toString,
+      dbObject("mach_status").toString,
+      dbObject("insertDate").toString,
+      dbObject("mac_address").toString,
+      dbObject("shiftDate").toString
+    )
+  }
 
   def getShiftTime(timestamp: Long) = {
     val offsetOf7Hours = 7 * 60 * 60 * 1000
