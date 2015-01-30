@@ -30,8 +30,24 @@ case class Record(
   def lotNo = if (!isFromBarcode) rawPartNo else rawLotNo
   def partNo = if (!isFromBarcode) "none" else rawPartNo
   def product = isFromBarcode match {
-    case true  => "" //! Get product from Barcode!!!
+    case true  => getProductFromBarcode.getOrElse("Unknown")
     case false => MachineInfo.getProduct(machID)
+  }
+
+  def customer = isFromBarcode match {
+    case true  => getCustomerFromBarcode.getOrElse("Unknown")
+    case false => "Unknown"
+  }
+
+  def getCustomerFromBarcode: Try[String] = Try {
+    //! Get customer from barcdoe data!!!!!
+    "AAAA"
+  }
+
+  def getProductFromBarcode: Try[String] = Try {
+    val radius = partNo.substring(10,12).toInt
+    val height = partNo.substring(12,14).toInt
+    radius + "x" + height
   }
 
   def toMongoObject = MongoDBObject(
@@ -61,6 +77,7 @@ case class Record(
       case Array("Unknown") => -1
       case Array(first, second) => first.toDouble
       case Array(first) => first.toDouble
+      case _ => -1
     }
   }
 
@@ -69,6 +86,7 @@ case class Record(
     case x if x >= 5 && x <= 8      => "5 - 8"
     case x if x >=10 && x <= 12.5   => "10 - 12.5"
     case x if x >=16 && x <= 18     => "16 - 18"
+    case x                          => x.toString
   }
 
   def machineTypeTitle: String = MachineInfo.getMachineType(this.machID)

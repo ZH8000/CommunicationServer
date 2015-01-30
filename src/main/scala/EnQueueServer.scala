@@ -47,7 +47,7 @@ class EnQueueServerThread extends Thread {
     } {
       val line = bufferedSource.getLines().next()
 
-      // logger.info(s" [*] [$counter] EnQueue: $line")
+      //logger.info(s" [*] [$counter] EnQueue: $line")
 
       if (line != "saveData") {
         channel.basicPublish(

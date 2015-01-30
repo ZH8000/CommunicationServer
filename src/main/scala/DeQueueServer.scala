@@ -52,12 +52,11 @@ class DeQueueServerThread extends Thread {
         val delivery = consumer.nextDelivery()
         val message = new String(delivery.getBody())
 
-        Future {
-          // logger.info(s" [*] [$recordCount] DeQueue: $message")
-
+        val dequeueWork = Future {
           val mongoProcessor = new MongoProcessor(mongoClient)
  
           Record(message).foreach{ record =>
+
             record.countQty match {
               case -1 => mongoProcessor.addMachineAlert(record)
               case  n => mongoProcessor.addRecord(record)
@@ -69,7 +68,10 @@ class DeQueueServerThread extends Thread {
           }
 
           channel.basicAck(delivery.getEnvelope.getDeliveryTag, false)
-          recordCount += 1
+        }
+
+        dequeueWork.onFailure { 
+          case e: Exception => logger.error("Cannot insert to mongoDB", e)
         }
       }
 
