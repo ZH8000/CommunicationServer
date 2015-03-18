@@ -97,7 +97,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       tableName = "product", 
       query = MongoDBObject(
         "product" -> record.product,
-        "machineTypeTitle" -> record.machineTypeTitle,
+        "machineType" -> record.machineType,
         "capacityRange" -> record.capacityRange
       ), 
       record = record
@@ -109,7 +109,7 @@ class MongoProcessor(mongoClient: MongoClient) {
         "timestamp" -> record.insertDate, 
         "shiftDate" -> record.shiftDate, 
         "mach_id" -> record.machID,
-        "machineTypeTitle" -> record.machineTypeTitle,
+        "machineType" -> record.machineType,
         "capacityRange" -> record.capacityRange
       ), 
       record = record
@@ -125,7 +125,7 @@ class MongoProcessor(mongoClient: MongoClient) {
           "product"   -> record.product, 
           "mach_id"   -> record.machID, 
           "defact_id" -> record.defactID,
-          "machineTypeTitle" -> record.machineTypeTitle,
+          "machineType" -> record.machineType,
           "capacityRange" -> record.capacityRange
         ), 
         record = record
@@ -138,7 +138,7 @@ class MongoProcessor(mongoClient: MongoClient) {
           "product"   -> record.product, 
           "mach_id"   -> record.machID, 
           "defact_id" -> record.defactID,
-          "machineTypeTitle" -> record.machineTypeTitle,
+          "machineType" -> record.machineType,
           "capacityRange" -> record.capacityRange
         ), 
         record = record
@@ -191,7 +191,7 @@ class MongoProcessor(mongoClient: MongoClient) {
           "product"   -> record.product, 
           "mach_id"   -> record.machID, 
           "other_event_id" -> record.otherEventID,
-          "machineTypeTitle" -> record.machineTypeTitle,
+          "machineType" -> record.machineType,
           "capacityRange" -> record.capacityRange
         ), 
         record = record
@@ -204,7 +204,7 @@ class MongoProcessor(mongoClient: MongoClient) {
           "product"   -> record.product, 
           "mach_id"   -> record.machID, 
           "other_event_id" -> record.otherEventID,
-          "machineTypeTitle" -> record.machineTypeTitle,
+          "machineType" -> record.machineType,
           "capacityRange" -> record.capacityRange
         ), 
         record = record
@@ -228,7 +228,7 @@ class MongoProcessor(mongoClient: MongoClient) {
         "timestamp" -> record.insertDate, 
         "shiftDate" -> record.shiftDate, 
         "mach_id"   -> record.machID,
-        "machineTypeTitle" -> record.machineTypeTitle,
+        "machineType" -> record.machineType,
         "capacityRange" -> record.capacityRange
       ), 
       record = record
