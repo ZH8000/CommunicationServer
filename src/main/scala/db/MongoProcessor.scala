@@ -52,7 +52,6 @@ class MongoProcessor(mongoClient: MongoClient) {
     val query = MongoDBObject(
       "timestamp" -> record.insertDate,
       "shiftDate" -> record.shiftDate,
-      "customer" -> record.customer,
       "partNo" -> record.partNo,
       "lotNo" -> record.lotNo,
       "product" -> record.product,
@@ -80,7 +79,6 @@ class MongoProcessor(mongoClient: MongoClient) {
       "partNo" -> record.partNo,
       "lotNo" -> record.lotNo,
       "product" -> record.product,
-      "customer" -> record.customer,
       "inputCount" -> record.workQty
     )
 
