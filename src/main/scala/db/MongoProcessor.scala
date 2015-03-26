@@ -256,6 +256,16 @@ class MongoProcessor(mongoClient: MongoClient) {
       record = record
     )
 
+    zhenhaiDB("machineStatus").update(
+      MongoDBObject("machineID" -> record.machID), 
+      $set(
+        "status" -> record.machineStatus,
+        "lastUpdateTime" -> record.embDate
+      ), 
+      upsert = true
+    )
+
+
     if (record.isFromBarcode) {
       updateWorkerDaily(record)
       updateDailyOrder(record)
