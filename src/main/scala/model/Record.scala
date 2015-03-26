@@ -39,11 +39,7 @@ case class Record(
     case false => "Unknown"
   }
 
-  def getCustomerFromBarcode: Try[String] = Try {
-    //! Get customer from barcdoe data!!!!!
-    "AAAA"
-  }
-
+  def getCustomerFromBarcode: Try[String] = Try { lotNo }
   def getProductFromBarcode: Try[String] = Try {
     val radius = partNo.substring(10,12).toInt
     val height = partNo.substring(12,14).toInt

@@ -53,6 +53,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       "timestamp" -> record.insertDate,
       "shiftDate" -> record.shiftDate,
       "customer" -> record.customer,
+      "partNo" -> record.partNo,
       "lotNo" -> record.lotNo,
       "product" -> record.product,
       "status" -> record.machineStatus
@@ -76,14 +77,35 @@ class MongoProcessor(mongoClient: MongoClient) {
     }
 
     val query = MongoDBObject(
+      "partNo" -> record.partNo,
       "lotNo" -> record.lotNo,
       "product" -> record.product,
       "customer" -> record.customer,
       "inputCount" -> record.workQty
     )
 
+    val orderStatusTable = zhenhaiDB("orderStatus")
+    val existRecordHolder = orderStatusTable.findOne(MongoDBObject("lotNo" -> record.lotNo))
+    val isNewStep = existRecordHolder match {
+      case None => true
+      case Some(oldRecord) => !oldRecord.keySet.contains(fieldName + "StartTime")
+    }
+
     zhenhaiDB("orderStatus").update(query, $inc(fieldName -> record.countQty), upsert = true)
     zhenhaiDB("orderStatus").update(query, $set("lastUpdated" -> record.embDate), upsert = true)
+
+    if (record.machineStatus.trim == "04" || 
+        record.machineStatus.trim == "06") {
+
+      zhenhaiDB("orderStatus").update(query, $set(fieldName + "DoneTime" -> record.embDate), upsert = true)
+    }
+
+    if (isNewStep) {
+      zhenhaiDB("orderStatus").update(query, $set(fieldName + "StartTime" -> record.embDate), upsert = true)
+    }
+
+    zhenhaiDB("orderStatus").update(query, $set(fieldName + "machineID" -> record.machID), upsert = true)
+    zhenhaiDB("orderStatus").update(query, $set(fieldName + "workerID" -> record.workID), upsert = true)
     zhenhaiDB("orderStatus").ensureIndex(query.mapValues(x => 1))
   }
 
