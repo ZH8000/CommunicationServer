@@ -268,9 +268,12 @@ class MongoProcessor(mongoClient: MongoClient) {
         MongoDBObject(
           "workerMongoID"   -> record.workID,
           "timestamp"       -> record.embDate,
+          "startTimestamp"  -> record.cxOrStartTimestamp,
           "maintenanceCode" -> record.eventID,
           "machineID"       -> record.machID,
-          "status"          -> record.machineStatus
+          "status"          -> record.machineStatus,
+	  "insertDate"	    -> record.insertDate,
+	  "shiftDate"	    -> record.shiftDate
         )
       )
     }
