@@ -263,6 +263,17 @@ class MongoProcessor(mongoClient: MongoClient) {
       upsert = true
     )
 
+    if (record.machineStatus.trim == "02" || record.machineStatus.trim == "03") {
+      zhenhaiDB("machineMaintainLog").insert(
+        MongoDBObject(
+          "workerMongoID"   -> record.workID,
+          "timestamp"       -> record.embDate,
+          "maintenanceCode" -> record.eventID,
+          "machineID"       -> record.machID,
+          "status"          -> record.machineStatus
+        )
+      )
+    }
 
     if (record.isFromBarcode) {
       updateWorkerDaily(record)
