@@ -98,6 +98,10 @@ class MongoProcessor(mongoClient: MongoClient) {
     )
 
     val orderStatusTable = zhenhaiDB("orderStatus")
+    val lotDateTable = zhenhaiDB("lotDate")
+
+    val lotDateRecord = lotDateTable.findOne(MongoDBObject("lotNo" -> record.lotNo))
+
     val existRecordHolder = orderStatusTable.findOne(MongoDBObject("lotNo" -> record.lotNo))
     val isNewStep = existRecordHolder match {
       case None => true
@@ -106,6 +110,10 @@ class MongoProcessor(mongoClient: MongoClient) {
 
     zhenhaiDB("orderStatus").update(query, $inc(fieldName -> record.countQty), upsert = true)
     zhenhaiDB("orderStatus").update(query, $set("lastUpdated" -> record.embDate), upsert = true)
+    lotDateRecord.foreach { lotDate =>
+      zhenhaiDB("orderStatus").update(query, $set("insertDate" -> lotDate("insertDate")), upsert = true)
+      zhenhaiDB("orderStatus").update(query, $set("shiftDate" -> lotDate("shiftDate")), upsert = true)
+    }
 
     if (record.machineStatus.trim == "04" || 
         record.machineStatus.trim == "06") {
@@ -295,9 +303,9 @@ class MongoProcessor(mongoClient: MongoClient) {
 
     if (record.isFromBarcode) {
       updateWorkerDaily(record)
+      updateLotToMonth(record)
       updateDailyOrder(record)
       updateOrderStatus(record)
-      updateLotToMonth(record)
     }
 
     if (!isImportFromDaily) {
