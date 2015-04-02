@@ -62,6 +62,21 @@ class MongoProcessor(mongoClient: MongoClient) {
     zhenhaiDB("dailyOrder").ensureIndex(query.mapValues(x => 1))
   }
 
+  def updateLotToMonth(record: Record) {
+    val lotDateTable = zhenhaiDB("lotDate")
+    val existRecordHolder = lotDateTable.findOne(MongoDBObject("lotNo" -> record.lotNo))
+    if (existRecordHolder.isEmpty) {
+      lotDateTable.insert(
+        MongoDBObject(
+          "lotNo" -> record.lotNo, 
+          "insertDate" -> record.insertDate.substring(0, 7), 
+          "shiftDate" -> record.shiftDate.substring(0, 7)
+        )
+      )
+    }
+
+  }
+
   def updateOrderStatus(record: Record) {
 
     //! Fix to real barcode data
@@ -282,6 +297,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       updateWorkerDaily(record)
       updateDailyOrder(record)
       updateOrderStatus(record)
+      updateLotToMonth(record)
     }
 
     if (!isImportFromDaily) {
