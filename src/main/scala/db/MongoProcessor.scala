@@ -62,6 +62,21 @@ class MongoProcessor(mongoClient: MongoClient) {
     zhenhaiDB("dailyOrder").ensureIndex(query.mapValues(x => 1))
   }
 
+  def updateLotToMonth(record: Record) {
+    val lotDateTable = zhenhaiDB("lotDate")
+    val existRecordHolder = lotDateTable.findOne(MongoDBObject("lotNo" -> record.lotNo))
+    if (existRecordHolder.isEmpty) {
+      lotDateTable.insert(
+        MongoDBObject(
+          "lotNo" -> record.lotNo, 
+          "insertDate" -> record.insertDate.substring(0, 7), 
+          "shiftDate" -> record.shiftDate.substring(0, 7)
+        )
+      )
+    }
+
+  }
+
   def updateOrderStatus(record: Record) {
 
     //! Fix to real barcode data
@@ -83,6 +98,10 @@ class MongoProcessor(mongoClient: MongoClient) {
     )
 
     val orderStatusTable = zhenhaiDB("orderStatus")
+    val lotDateTable = zhenhaiDB("lotDate")
+
+    val lotDateRecord = lotDateTable.findOne(MongoDBObject("lotNo" -> record.lotNo))
+
     val existRecordHolder = orderStatusTable.findOne(MongoDBObject("lotNo" -> record.lotNo))
     val isNewStep = existRecordHolder match {
       case None => true
@@ -91,6 +110,10 @@ class MongoProcessor(mongoClient: MongoClient) {
 
     zhenhaiDB("orderStatus").update(query, $inc(fieldName -> record.countQty), upsert = true)
     zhenhaiDB("orderStatus").update(query, $set("lastUpdated" -> record.embDate), upsert = true)
+    lotDateRecord.foreach { lotDate =>
+      zhenhaiDB("orderStatus").update(query, $set("insertDate" -> lotDate("insertDate")), upsert = true)
+      zhenhaiDB("orderStatus").update(query, $set("shiftDate" -> lotDate("shiftDate")), upsert = true)
+    }
 
     if (record.machineStatus.trim == "04" || 
         record.machineStatus.trim == "06") {
@@ -271,13 +294,16 @@ class MongoProcessor(mongoClient: MongoClient) {
           "startTimestamp"  -> record.cxOrStartTimestamp,
           "maintenanceCode" -> record.eventID,
           "machineID"       -> record.machID,
-          "status"          -> record.machineStatus
+          "status"          -> record.machineStatus,
+	  "insertDate"	    -> record.insertDate,
+	  "shiftDate"	    -> record.shiftDate
         )
       )
     }
 
     if (record.isFromBarcode) {
       updateWorkerDaily(record)
+      updateLotToMonth(record)
       updateDailyOrder(record)
       updateOrderStatus(record)
     }
