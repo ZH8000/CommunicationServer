@@ -47,6 +47,30 @@ class MongoProcessor(mongoClient: MongoClient) {
     zhenhaiDB("workerDaily").ensureIndex(query.mapValues(x => 1))
   }
 
+  def updateProductionStatus(record: Record) {
+    val query = MongoDBObject(
+      "partNo" -> record.partNo,
+      "lotNo" -> record.lotNo,
+      "product" -> record.product,
+      "status" -> record.machineStatus
+    )
+
+    val fieldName = MachineInfo.getMachineTypeID(record.machID) match {
+      case 1 => "step1" // 加締
+      case 2 => "step2" // 組立
+      case 3 => "step3" // 老化
+      case 4 => "step4" // 選別
+      case 5 => "step5" // 加工切角
+      case _ => "unknownStep"
+    }
+
+    zhenhaiDB("productionStatus").update(query, $set("lastUpdated" -> record.insertDate), upsert = true)
+    zhenhaiDB("productionStatus").update(query, $set("lastUpdatedShifted" -> record.shiftDate), upsert = true)
+    zhenhaiDB("productionStatus").update(query, $inc("count_qty" -> record.countQty), upsert = true)
+    zhenhaiDB("productionStatus").update(query, $set(fieldName + "Status" -> record.machineStatus), upsert = true)
+    zhenhaiDB("productionStatus").ensureIndex(query.mapValues(x => 1))
+  }
+
   def updateDailyOrder(record: Record) {
 
     val query = MongoDBObject(
@@ -58,7 +82,17 @@ class MongoProcessor(mongoClient: MongoClient) {
       "status" -> record.machineStatus
     )
 
+    val fieldName = MachineInfo.getMachineTypeID(record.machID) match {
+      case 1 => "step1" // 加締
+      case 2 => "step2" // 組立
+      case 3 => "step3" // 老化
+      case 4 => "step4" // 選別
+      case 5 => "step5" // 加工切角
+      case _ => "unknownStep"
+    }
+
     zhenhaiDB("dailyOrder").update(query, $inc("count_qty" -> record.countQty), upsert = true)
+    zhenhaiDB("dailyOrder").update(query, $set(fieldName + "Status" -> record.machineStatus), upsert = true)
     zhenhaiDB("dailyOrder").ensureIndex(query.mapValues(x => 1))
   }
 
@@ -306,6 +340,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       updateLotToMonth(record)
       updateDailyOrder(record)
       updateOrderStatus(record)
+      updateProductionStatus(record)
     }
 
     if (!isImportFromDaily) {
