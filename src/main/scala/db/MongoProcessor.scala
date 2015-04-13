@@ -51,8 +51,7 @@ class MongoProcessor(mongoClient: MongoClient) {
     val query = MongoDBObject(
       "partNo" -> record.partNo,
       "lotNo" -> record.lotNo,
-      "product" -> record.product,
-      "status" -> record.machineStatus
+      "product" -> record.product
     )
 
     val fieldName = MachineInfo.getMachineTypeID(record.machID) match {
@@ -65,9 +64,9 @@ class MongoProcessor(mongoClient: MongoClient) {
     }
 
     zhenhaiDB("productionStatus").update(query, $set("lastUpdated" -> record.insertDate), upsert = true)
-    zhenhaiDB("productionStatus").update(query, $set("lastUpdatedShifted" -> record.shiftDate), upsert = true)
-    zhenhaiDB("productionStatus").update(query, $inc("count_qty" -> record.countQty), upsert = true)
-    zhenhaiDB("productionStatus").update(query, $set(fieldName + "Status" -> record.machineStatus), upsert = true)
+    zhenhaiDB("productionStatus").update(query, $set("lastUpdatedShifted" -> record.shiftDate))
+    zhenhaiDB("productionStatus").update(query, $set(fieldName + "Status" -> record.machineStatus))
+    zhenhaiDB("productionStatus").update(query, $set(fieldName + "Machine" -> record.machID))
     zhenhaiDB("productionStatus").ensureIndex(query.mapValues(x => 1))
   }
 
@@ -93,6 +92,7 @@ class MongoProcessor(mongoClient: MongoClient) {
 
     zhenhaiDB("dailyOrder").update(query, $inc("count_qty" -> record.countQty), upsert = true)
     zhenhaiDB("dailyOrder").update(query, $set(fieldName + "Status" -> record.machineStatus), upsert = true)
+    zhenhaiDB("dailyOrder").update(query, $set(fieldName + "Machine" -> record.machID))
     zhenhaiDB("dailyOrder").ensureIndex(query.mapValues(x => 1))
   }
 
