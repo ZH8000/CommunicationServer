@@ -10,15 +10,21 @@ import javax.mail.Message
 import javax.mail.Transport
 import javax.mail.Address
 import com.mongodb.casbah.Imports._
+<<<<<<< HEAD
 import org.slf4j.LoggerFactory
 import com.mongodb.casbah.Imports._
 
 
+=======
+>>>>>>> baf6c88075f37b6afd3d15ba2837c1ceea03b059
 
 object SendNotificationEmail {
 
   val receiverList = "brianhsu.hsu@gmail.com"
+<<<<<<< HEAD
   val logger = LoggerFactory.getLogger("SendNotificationEmail")
+=======
+>>>>>>> baf6c88075f37b6afd3d15ba2837c1ceea03b059
 
   def sendmail(username: String, password: String, body: String) {
     val props = new Properties
@@ -39,7 +45,11 @@ object SendNotificationEmail {
     message.setSubject("今日維修零件清單")
     message.setText(body)
     Transport.send(message);
+<<<<<<< HEAD
     logger.info("DONE")
+=======
+    println("DONE")
+>>>>>>> baf6c88075f37b6afd3d15ba2837c1ceea03b059
   }
 
   def getNotificationAlarmList: Option[String] = {
