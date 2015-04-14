@@ -164,6 +164,11 @@ class MongoProcessor(mongoClient: MongoClient) {
     zhenhaiDB("orderStatus").ensureIndex(query.mapValues(x => 1))
   }
 
+  def updateAlarmStatus(record: Record) {
+    val operation = $inc("countQty" -> record.countQty)
+    zhenhaiDB("alarm").update(MongoDBObject("machineID" -> record.machID), operation, false, true)
+  }
+
   def addRecord(record: Record, isImportFromDaily: Boolean = false) {
 
     if (record.countQty >= 2000 || record.eventQty >= 2000) {
@@ -231,6 +236,8 @@ class MongoProcessor(mongoClient: MongoClient) {
         ), 
         record = record
       )
+
+      updateAlarmStatus(record)
     }
 
     // 不良事件
