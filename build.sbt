@@ -15,7 +15,8 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.1.2",
   "com.rabbitmq" % "amqp-client" % "3.3.5",
   "org.mongodb" %% "casbah" % "2.7.3",
-  "com.jsuereth" %% "scala-arm" % "1.4"
+  "com.jsuereth" %% "scala-arm" % "1.4",
+  "com.sun.mail" % "javax.mail" % "1.5.2"
 )
 
 
