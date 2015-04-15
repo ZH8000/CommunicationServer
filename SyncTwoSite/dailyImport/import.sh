@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SERVER_VERSION="0.0.3"
+SERVER_VERSION="0.0.4"
 
 #dateString=`date --date='yesterday'`
 dateString=$1
@@ -13,15 +13,26 @@ REMOTE_SCRIPT_DIR="/home/zhenhai/dailyDump"
 REMOTE_SCRIPT_DUMP="dump.sh"
 REMOTE_SCRIPT_CLEAN="clean.sh"
 
-ssh -p $REMOTE_PORT zhenhai@$REMOTE_IP $REMOTE_SCRIPT_DIR/$REMOTE_SCRIPT_DUMP $dateString
-scp -P $REMOTE_PORT zhenhai@$REMOTE_IP:$REMOTE_SCRIPT_DIR/$dateString.tar.gz $SCRIPT_DIR/$dateString.tar.gz
+echo "============= DUMP REMOTE DATABASE ============="
 
-tar -xvzf $SCRIPT_DIR/$dateString.tar.gz
+ssh -p $REMOTE_PORT zhenhai@$REMOTE_IP $REMOTE_SCRIPT_DIR/$REMOTE_SCRIPT_DUMP $dateString
+
+echo "============= RESTORE DATABASE ============="
+
+scp -P $REMOTE_PORT zhenhai@$REMOTE_IP:$REMOTE_SCRIPT_DIR/$dateString.tar.gz $dateString.tar.gz
+#
+tar -xvzf $dateString.tar.gz
 mongorestore --db zhenhaiDaily --drop export$dateString/zhenhaiDaily
+mongorestore --db zhenhai --drop export$dateString/zhenhai
+
 rm -rvf $dateString.tar.gz
 rm -rvf export$dateString/
-# 
+
+echo "============= START IMPORT ============="
+ 
 java -cp $SCRIPT_DIR/CommunicationServer-assembly-$SERVER_VERSION.jar tw.com.zhenhai.main.DailyImport $dateString
-# 
+ 
+echo "============= CLEAN ============="
+
 ssh -p $REMOTE_PORT zhenhai@$REMOTE_IP $REMOTE_SCRIPT_DIR/$REMOTE_SCRIPT_CLEAN
 

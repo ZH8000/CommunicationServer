@@ -14,14 +14,15 @@ object DailyImport {
   val mongoProcessor = new MongoProcessor(mongoClient)
 
   def main(args: Array[String]) = {
-    val collection = mongoDB("2015-01-31")
+    val date = args(0)
+    val collection = mongoDB(date)
     var counter = 0
     val totalCount = collection.count()
 
     collection.find.foreach { doc =>
 
       val record = Record(doc)
-      println(s"Processing record [$counter / $totalCount] ....")
+      println(s"Processing [$date] record [$counter / $totalCount] ....")
 
       record.countQty match {
         case -1 => mongoProcessor.addMachineAlert(record, isImportFromDaily = true)
