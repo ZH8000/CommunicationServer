@@ -6,8 +6,11 @@ import com.mongodb.casbah.Imports._
 
 import java.text.SimpleDateFormat
 import java.util.Date
+import org.slf4j.LoggerFactory
 
 class MongoProcessor(mongoClient: MongoClient) {
+
+  val logger = LoggerFactory.getLogger("SendNotificationEmail")
 
   val zhenhaiDB = mongoClient("zhenhai")
   val dailyDB = mongoClient("zhenhaiDaily")
@@ -165,8 +168,32 @@ class MongoProcessor(mongoClient: MongoClient) {
   }
 
   def updateAlarmStatus(record: Record) {
-    val operation = $inc("countQty" -> record.countQty)
-    zhenhaiDB("alarm").update(MongoDBObject("machineID" -> record.machID), operation, false, true)
+    val machineCounterColl = zhenhaiDB("machineCounter")
+    val operation = $inc("counter" -> record.countQty)
+    machineCounterColl.update(MongoDBObject("machineID" -> record.machID), operation, true, false)
+    val currentMachineCounter = 
+      machineCounterColl.findOne(MongoDBObject("machineID" -> record.machID))
+                        .map(row => row("counter").toString.toLong)
+                        .getOrElse(0L)
+
+    val alarmColl = zhenhaiDB("alarm")
+
+    def shouldReset(row: DBObject): Boolean = {
+      val machineID = row.getAs[String]("machineID").getOrElse("")
+      val lastUpdatedCount = row.getAs[Long]("lastReplaceCount").getOrElse(0L)
+      val isDone = row.getAs[Boolean]("isDone").getOrElse(false)
+      val countdownQty = row.getAs[Long]("countdownQty").getOrElse(0L)
+
+      isDone && (countdownQty + lastUpdatedCount) <= currentMachineCounter
+    }
+
+    val updateTargetIDs = alarmColl.find(MongoDBObject("machineID" -> record.machID)).filter(shouldReset).map(_._id).flatten
+
+    updateTargetIDs.foreach { alarmID =>
+      val query = MongoDBObject("_id" -> alarmID)
+      val operation = $set("isDone" -> false)
+      alarmColl.update(query, operation)
+    }
   }
 
   def addRecord(record: Record, isImportFromDaily: Boolean = false) {

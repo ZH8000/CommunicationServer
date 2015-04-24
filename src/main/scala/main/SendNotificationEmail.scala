@@ -45,14 +45,30 @@ object SendNotificationEmail {
     val mongoClient = MongoClient("localhost")
     val zhenhaiDB = mongoClient("zhenhai")
     val alarms = zhenhaiDB("alarm").find(MongoDBObject("isDone" -> false))
+    val machineCounterColl = zhenhaiDB("machineCounter")
 
-    def isUrgent(alarm: DBObject) = alarm.get("countQty").toString.toInt >= alarm.get("countdownQty").toString.toInt
+    def isUrgent(row: DBObject): Boolean = {
+      val machineID = row.getAs[String]("machineID").getOrElse("")
+      val lastUpdatedCount = row.getAs[Long]("lastReplaceCount").getOrElse(0L)
+      val isDone = row.getAs[Boolean]("isDone").getOrElse(false)
+      val currentMachineCounter =
+        machineCounterColl.findOne(MongoDBObject("machineID" -> machineID))
+                          .map(row => row("counter").toString.toLong)
+                          .getOrElse(0L)
+      val countdownQty = row.getAs[Long]("countdownQty").getOrElse(0L)
+
+      !isDone && (countdownQty + lastUpdatedCount) <= currentMachineCounter
+    }
+
     val alarmNotices = alarms.filter(isUrgent).map { alarm =>
-      val countQty = alarm.get("countQty").toString.toInt
-      val countdownQty = alarm.get("countdownQty").toString.toInt
-      val machineID = alarm.get("machineID").toString
-      val description = alarm.get("description").toString
-      s"[$machineID]  $description ($countQty / $countdownQty)"
+      val machineID = alarm.getAs[String]("machineID").getOrElse("")
+      val currentMachineCounter =
+        machineCounterColl.findOne(MongoDBObject("machineID" -> machineID))
+                          .map(row => row("counter").toString.toLong)
+                          .getOrElse(0L)
+      val countdownQty = alarm.getAs[Long]("countdownQty").getOrElse(0L)
+      val description = alarm.getAs[String]("description").getOrElse("")
+      s"[$machineID]  $description ($currentMachineCounter / $countdownQty)"
     }
 
     alarmNotices.isEmpty match {
