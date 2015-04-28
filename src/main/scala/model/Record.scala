@@ -104,6 +104,7 @@ case class Record(
 
   def machineType: Int = MachineInfo.getMachineTypeID(this.machID)
 
+  lazy val customer = Try { partNo.substring(19, 23) }.getOrElse("Unknown")
   lazy val tenMinute = {
     val dateTimeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm")
     dateTimeFormatter.format(embDate * 1000).substring(0, 15) + "0"
@@ -114,7 +115,7 @@ object Record {
 
   def apply(dbObject: DBObject) = {
 
-    val rawLotNo = if (dbObject("part_no").toString == "none") "01" else dbObject("part_no").toString
+    val rawLotNo  = if (dbObject("part_no").toString == "none") "01" else dbObject("lot_no").toString
     val rawPartNo = if (dbObject("part_no").toString == "none") dbObject("part_no").toString else dbObject("lot_no").toString
 
     new Record(

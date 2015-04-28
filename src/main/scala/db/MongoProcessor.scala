@@ -147,13 +147,14 @@ class MongoProcessor(mongoClient: MongoClient) {
 
     zhenhaiDB("orderStatus").update(query, $inc(fieldName -> record.countQty), upsert = true)
     zhenhaiDB("orderStatus").update(query, $set("lastUpdated" -> record.embDate), upsert = true)
+    zhenhaiDB("orderStatus").update(query, $set("customer" -> record.customer), upsert = true)
     lotDateRecord.foreach { lotDate =>
       zhenhaiDB("orderStatus").update(query, $set("insertDate" -> lotDate("insertDate")), upsert = true)
       zhenhaiDB("orderStatus").update(query, $set("shiftDate" -> lotDate("shiftDate")), upsert = true)
     }
 
     if (record.machineStatus.trim == "04" || 
-        record.machineStatus.trim == "06") {
+        record.machineStatus.trim == "07") {
 
       zhenhaiDB("orderStatus").update(query, $set(fieldName + "DoneTime" -> record.embDate), upsert = true)
     }
