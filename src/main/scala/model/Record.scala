@@ -81,7 +81,8 @@ case class Record(
     "product" -> product,
     "insertDate" ->  insertDate,
     "mac_address" -> macAddress,
-    "shiftDate" -> shiftDate
+    "shiftDate" -> shiftDate,
+    "originEventID" -> eventID
   )
 
 

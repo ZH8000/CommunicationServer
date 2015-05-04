@@ -277,7 +277,8 @@ class MongoProcessor(mongoClient: MongoClient) {
           "mach_model" -> MachineInfo.getModel(record.machID),
           "defact_id"  -> record.defactID,
           "date"       -> record.insertDate,
-          "shiftDate"  -> record.shiftDate
+          "shiftDate"  -> record.shiftDate,
+          "machine_type" -> MachineInfo.getMachineTypeID(record.machID)
         ), 
         record = record
       )
