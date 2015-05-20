@@ -20,9 +20,9 @@ object MachineInfo {
     "ATS-600M"   -> Map(9  -> 0),
     "ATS-630J"   -> Map(9  -> 0),
     "ATS-720"    -> Map(9  -> 0),
-    "ATS-900"    -> Map(9  -> 1),
-    "NCR-236A"   -> Map(7  -> 1),
-    "NCR-356B"   -> Map(7  -> 1),
+    "ATS-900"    -> Map(9  -> 0),
+    "NCR-236A"   -> Map(7  -> 0),
+    "NCR-356B"   -> Map(7  -> 0),
     "FTO-2200"   -> Map(8  -> 101, 9 -> 103),
     "FTO-2200A"  -> Map(8  -> 103, 18 -> 105, 19 -> 106, 20 -> 107, 21 -> 108),
     "FTO-2400"   -> Map(1  -> 101, 2  -> 102, 22 -> 104, 23 -> 105, 24 -> 106, 25 -> 107),
@@ -582,7 +582,8 @@ object MachineInfo {
     2 -> "組立",      // G
     3 -> "老化",      // A
     4 -> "選別",      // A 左邊四台
-    5 -> "加工切角"   // T, C
+    5 -> "加工切角",  // T, C
+    6 -> "包裝"       // B
   )
 
   val machineList = List(
@@ -899,13 +900,13 @@ object MachineInfo {
     MachineInfo("192.168.20.59",  "T21",    5, "NCR-356B",    None),
     MachineInfo("192.168.20.60",  "T22",    5, "CFT-450E",    Some("未安裝")),
     MachineInfo("192.168.20.61",  "T23",    5, "合鴻",        Some("未安裝")),
-    MachineInfo("192.168.20.62",  "C01",    5, "富信成",      Some("未安裝")),
-    MachineInfo("192.168.20.63",  "C03",    5, "富信成",      Some("未安裝")),
+    MachineInfo("192.168.20.62",  "C01",    5, "富信成",      None),
+    MachineInfo("192.168.20.63",  "C03",    5, "富信成",      None),
     MachineInfo("192.168.20.64",  "C04",    5, "TAICON",      None),
     MachineInfo("192.168.20.65",  "C05",    5, "TAICON",      None),
     MachineInfo("192.168.20.66",  "C06",    5, "TAICON",      None),
-    MachineInfo("192.168.20.67",  "C07",    5, "富信成",      Some("未安裝")),
-    MachineInfo("192.168.20.68",  "C08",    5, "富信成",      Some("未安裝")),
+    MachineInfo("192.168.20.67",  "C07",    5, "富信成",      None),
+    MachineInfo("192.168.20.68",  "C08",    5, "富信成",      None),
     MachineInfo("192.168.20.69",  "B01",    6, "TAP-306",     Some("不在地圖上")),
     MachineInfo("192.168.20.70",  "B02",    6, "TAP-306",     Some("不在地圖上")),
     MachineInfo("192.168.20.71",  "B03",    6, "TAP-306",     Some("不在地圖上")),
