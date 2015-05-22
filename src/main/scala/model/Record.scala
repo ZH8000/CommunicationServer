@@ -117,7 +117,7 @@ object Record {
   def apply(dbObject: DBObject) = {
 
     val rawLotNo  = if (dbObject("part_no").toString == "none") "01" else dbObject("lot_no").toString
-    val rawPartNo = if (dbObject("part_no").toString == "none") dbObject("part_no").toString else dbObject("lot_no").toString
+    val rawPartNo = if (dbObject("part_no").toString == "none") dbObject("lot_no").toString else dbObject("part_no").toString
 
     new Record(
       rawLotNo,
