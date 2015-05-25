@@ -12,10 +12,7 @@ exportFile="$dateString.tar.gz"
 
 cd "$(dirname "$0")"
 echo "Dump mongoDB collection $dateString..."
-mongodump --db zhenhaiDaily -o $exportDir --collection $dateString
-mongodump --db zhenhai -o $exportDir --collection user
-mongodump --db zhenhai -o $exportDir --collection worker
-mongodump --db zhenhai -o $exportDir --collection machineLevel
+mongodump --db zhenhai -o $exportDir
 
 tar -cvzf $exportFile $exportDir/
 

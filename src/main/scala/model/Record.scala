@@ -118,6 +118,7 @@ object Record {
 
     val rawLotNo  = if (dbObject("part_no").toString == "none") "01" else dbObject("lot_no").toString
     val rawPartNo = if (dbObject("part_no").toString == "none") dbObject("part_no").toString else dbObject("lot_no").toString
+    val rawEventIDHolder = (Option(dbObject.get("originEventID")) orElse Option(dbObject.get("defact_id"))).map(_.toString.toLong)
 
     new Record(
       rawLotNo,
@@ -127,7 +128,7 @@ object Record {
       dbObject("emb_date").toString.toLong,
       dbObject("event_qty").toString.toLong,
       dbObject("mach_ip").toString,
-      dbObject("defact_id").toString.toLong,
+      rawEventIDHolder.getOrElse(-1L),
       dbObject("mach_id").toString,
       dbObject("work_id").toString,
       dbObject("CX").toString,

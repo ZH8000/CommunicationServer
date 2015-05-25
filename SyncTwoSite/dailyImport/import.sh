@@ -22,17 +22,7 @@ echo "============= RESTORE DATABASE ============="
 scp -P $REMOTE_PORT zhenhai@$REMOTE_IP:$REMOTE_SCRIPT_DIR/$dateString.tar.gz $dateString.tar.gz
 #
 tar -xvzf $dateString.tar.gz
-mongorestore --db zhenhaiDaily --drop export$dateString/zhenhaiDaily
 mongorestore --db zhenhai --drop export$dateString/zhenhai
 
 rm -rvf $dateString.tar.gz
 rm -rvf export$dateString/
-
-echo "============= START IMPORT ============="
- 
-java -cp $SCRIPT_DIR/CommunicationServer-assembly-$SERVER_VERSION.jar tw.com.zhenhai.main.DailyImport $dateString
- 
-echo "============= CLEAN ============="
-
-ssh -p $REMOTE_PORT zhenhai@$REMOTE_IP $REMOTE_SCRIPT_DIR/$REMOTE_SCRIPT_CLEAN
-
