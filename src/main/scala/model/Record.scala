@@ -114,33 +114,6 @@ case class Record(
 
 object Record {
 
-  def apply(dbObject: DBObject) = {
-
-    val rawLotNo  = if (dbObject("part_no").toString == "none") "01" else dbObject("lot_no").toString
-    val rawPartNo = if (dbObject("part_no").toString == "none") dbObject("part_no").toString else dbObject("lot_no").toString
-    val rawEventIDHolder = (Option(dbObject.get("originEventID")) orElse Option(dbObject.get("defact_id"))).map(_.toString.toLong)
-
-    new Record(
-      rawLotNo,
-      rawPartNo,
-      dbObject("work_qty").toString.toLong,
-      dbObject("count_qty").toString.toLong,
-      dbObject("emb_date").toString.toLong,
-      dbObject("event_qty").toString.toLong,
-      dbObject("mach_ip").toString,
-      rawEventIDHolder.getOrElse(-1L),
-      dbObject("mach_id").toString,
-      dbObject("work_id").toString,
-      dbObject("CX").toString,
-      dbObject("DX").toString,
-      dbObject("LC").toString,
-      dbObject("mach_status").toString,
-      dbObject("insertDate").toString,
-      dbObject("mac_address").toString,
-      dbObject("shiftDate").toString
-    )
-  }
-
   def getShiftTime(timestamp: Long) = {
     val offsetOf7Hours = 7 * 60 * 60 * 1000
     new Date((timestamp * 1000) - offsetOf7Hours)    
