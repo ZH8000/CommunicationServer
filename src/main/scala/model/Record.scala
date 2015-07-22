@@ -34,6 +34,11 @@ case class Record(
     case false => MachineInfo.getProduct(machID)
   }
 
+  def fullProductCode = isFromBarcode match {
+    case true   => Try{partNo.substring(10, 15)}.getOrElse("Unknown")
+    case false  => "Unknown"
+  }
+
   def getProductFromBarcode: Try[String] = Try {
     val radius = partNo.substring(10,12).toInt
     val height = partNo.substring(12,14).toInt

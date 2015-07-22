@@ -50,6 +50,23 @@ class MongoProcessor(mongoClient: MongoClient) {
     zhenhaiDB("workerDaily").ensureIndex(query.mapValues(x => 1))
   }
 
+  def updateWorkerPerformance(record: Record) {
+
+    val query = MongoDBObject(
+      "timestamp"     -> record.insertDate, 
+      "shiftDate"     -> record.shiftDate,
+      "month"         -> record.shiftDate.substring(0, 7),
+      "workerMongoID" -> record.workID,
+      "machineID"     -> record.machID,
+      "productCode"   -> record.fullProductCode,
+      "lotNo"         -> record.lotNo
+    )
+
+    zhenhaiDB("workerPerformance").update(query, $inc("countQty" -> record.countQty), upsert = true)
+    zhenhaiDB("workerPerformance").ensureIndex(query.mapValues(x => 1))
+  }
+
+
   def updateProductionStatus(record: Record) {
     val query = MongoDBObject(
       "partNo" -> record.partNo,
@@ -373,6 +390,7 @@ class MongoProcessor(mongoClient: MongoClient) {
 
     if (record.isFromBarcode) {
       updateWorkerDaily(record)
+      updateWorkerPerformance(record)
       updateLotToMonth(record)
       updateDailyOrder(record)
       updateOrderStatus(record)
