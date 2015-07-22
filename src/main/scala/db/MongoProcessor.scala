@@ -13,8 +13,6 @@ class MongoProcessor(mongoClient: MongoClient) {
   val logger = LoggerFactory.getLogger("SendNotificationEmail")
 
   val zhenhaiDB = mongoClient("zhenhai")
-  val dailyDB = mongoClient("zhenhaiDaily")
-  val rawDB = mongoClient("zhenhaiRaw")
   val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
 
   def update(tableName: String, query: MongoDBObject, record: Record) {
@@ -23,7 +21,7 @@ class MongoProcessor(mongoClient: MongoClient) {
     zhenhaiDB(tableName).update(query, operation, upsert = true)
   }
 
-  def addMachineAlert(record: Record, isImportFromDaily: Boolean = false) {
+  def addMachineAlert(record: Record) {
 
     val query = MongoDBObject(
       "date"      -> record.tenMinute.substring(0, 10),
@@ -33,9 +31,6 @@ class MongoProcessor(mongoClient: MongoClient) {
     )
 
     zhenhaiDB("alert").update(query, query, upsert = true);
-    if (!isImportFromDaily) {
-      dailyDB(record.insertDate).insert(record.toMongoObject)
-    }
   }
 
   def updateWorkerDaily(record: Record) {
@@ -247,7 +242,7 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   }
 
-  def addRecord(record: Record, isImportFromDaily: Boolean = false) {
+  def addRecord(record: Record) {
 
     if (record.countQty >= 2000 || record.eventQty >= 2000) {
       zhenhaiDB("strangeQty").insert(record.toMongoObject)
@@ -446,8 +441,5 @@ class MongoProcessor(mongoClient: MongoClient) {
       updateOperationTime(record)
     }
 
-    if (!isImportFromDaily) {
-      dailyDB(record.insertDate).insert(record.toMongoObject)
-    }
   }
 }
