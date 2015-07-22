@@ -55,15 +55,15 @@ class DeQueueServerThread extends Thread {
       while (!shouldStopped) {
         val delivery = consumer.nextDelivery()
         val message = new String(delivery.getBody())
-        val filename = "/var/log/zhenhaiRaw/" + dateFormatter.format(new Date)
-        val printWriter = new PrintWriter(new FileWriter(filename, true))
-
-        printWriter.append(message)
-        printWriter.close()
 
         val dequeueWork = Future {
           val mongoProcessor = new MongoProcessor(mongoClient)
- 
+          val zhenhaiRawDB = mongoClient("zhenhaiRaw")
+          val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
+          val rawTable = zhenhaiRawDB(dateFormatter.format(new Date))
+
+          rawTable.insert(MongoDBObject("data" -> message))
+
           Record(message).foreach{ record =>
 
             record.countQty match {

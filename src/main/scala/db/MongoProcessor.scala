@@ -14,6 +14,7 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   val zhenhaiDB = mongoClient("zhenhai")
   val dailyDB = mongoClient("zhenhaiDaily")
+  val rawDB = mongoClient("zhenhaiRaw")
   val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
 
   def update(tableName: String, query: MongoDBObject, record: Record) {
