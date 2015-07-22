@@ -214,6 +214,38 @@ class MongoProcessor(mongoClient: MongoClient) {
     }
   }
 
+  def getLastOperationTimeIndex(record: Record): Option[Long] = {
+    val operationTime = zhenhaiDB("operationTime")
+
+    operationTime.find(MongoDBObject("lotNo" -> record.lotNo, "partNo" -> record.partNo)).toList
+                 .sortWith((a, b) => a.get("order").toString.toLong > b.get("order").toString.toLong)
+                 .map(x => x.get("order").toString.toLong)
+                 .headOption
+  }
+
+  def updateOperationTime(record: Record) {
+    val operationTime = zhenhaiDB("operationTime")
+    val operationTimeRecord = for {
+      lastIndex <- getLastOperationTimeIndex(record)
+      query = MongoDBObject("lotNo" -> record.lotNo, "partNo" -> record.partNo, "order" -> lastIndex)
+      existRecord <- operationTime.find().toList.headOption
+      currentTimestamp <- Option(existRecord.get("currentTimestamp")).map(_.asInstanceOf[Long])
+    } yield (lastIndex, currentTimestamp)
+
+
+    operationTimeRecord.foreach { case(lastIndex, currentTimestamp) =>
+      
+      if (currentTimestamp < record.embDate) {
+        operationTime.update(
+          MongoDBObject("lotNo" -> record.lotNo, "partNo" -> record.partNo, "order" -> lastIndex),
+          $set("currentTimestamp" -> record.embDate)
+        )
+      }
+
+    }
+
+  }
+
   def addRecord(record: Record, isImportFromDaily: Boolean = false) {
 
     if (record.countQty >= 2000 || record.eventQty >= 2000) {
@@ -388,6 +420,21 @@ class MongoProcessor(mongoClient: MongoClient) {
       )
     }
 
+    if (record.machineStatus.trim == "09") {
+      val operationTime = zhenhaiDB("operationTime")
+      val newOperationTimeIndex = getLastOperationTimeIndex(record).map(i => i + 1).getOrElse(0)
+
+      operationTime.insert(
+        MongoDBObject(
+          "lotNo"   -> record.lotNo, 
+          "partNo"  -> record.partNo, 
+          "startTimestamp" -> record.embDate, 
+          "currentTimestamp" -> record.embDate, 
+          "order" -> newOperationTimeIndex
+        )
+      )
+    }
+
     if (record.isFromBarcode) {
       updateWorkerDaily(record)
       updateWorkerPerformance(record)
@@ -395,6 +442,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       updateDailyOrder(record)
       updateOrderStatus(record)
       updateProductionStatus(record)
+      updateOperationTime(record)
     }
 
     if (!isImportFromDaily) {

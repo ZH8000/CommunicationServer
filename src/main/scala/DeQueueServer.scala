@@ -14,6 +14,9 @@ import com.rabbitmq.client.QueueingConsumer
 
 import org.slf4j.LoggerFactory
 import com.mongodb.casbah.Imports._
+import java.io._
+import java.util.Date
+import java.text.SimpleDateFormat
 
 
 class DeQueueServerThread extends Thread {
@@ -45,12 +48,18 @@ class DeQueueServerThread extends Thread {
       val (channel, consumer) = initRabbitMQ()
       var recordCount: Long = 0
       val mongoClient = MongoClient("localhost")
+      val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
  
       logger.info(" [*] DeQueue Server Started.")
 
       while (!shouldStopped) {
         val delivery = consumer.nextDelivery()
         val message = new String(delivery.getBody())
+        val filename = "/var/log/zhenhaiRaw/" + dateFormatter.format(new Date)
+        val printWriter = new PrintWriter(new FileWriter(filename, true))
+
+        printWriter.append(message)
+        printWriter.close()
 
         val dequeueWork = Future {
           val mongoProcessor = new MongoProcessor(mongoClient)
