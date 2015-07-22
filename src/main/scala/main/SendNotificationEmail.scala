@@ -16,7 +16,7 @@ import com.mongodb.casbah.Imports._
 
 object SendNotificationEmail {
 
-  val receiverList = "brianhsu.hsu@gmail.com"
+  val receiverList = ("z_h_e_n_h_a_i@mailinator.com " :: getReceivers).mkString("; ")
   val logger = LoggerFactory.getLogger("SendNotificationEmail")
 
   def sendmail(username: String, password: String, body: String) {
@@ -40,6 +40,20 @@ object SendNotificationEmail {
     Transport.send(message);
     logger.info("DONE")
   }
+
+  
+  def getReceivers = {
+    val mongoClient = MongoClient("localhost")
+    val zhenhaiDB = mongoClient("zhenhai")
+    val permissions = 
+      zhenhaiDB("permissions").find
+        .filter(x => x.get("permissionContent").asInstanceOf[BasicDBList].contains("網站管理－維修行事曆"))
+        .map(x => x.get("permissionName").toString)
+        .toList ++ List("administrator")
+    
+    zhenhaiDB("user").filter(x => permissions.contains(x.get("permission"))).map(x => x.get("email")).map(_.toString).toList
+  }
+
 
   def getNotificationAlarmList: Option[String] = {
     val mongoClient = MongoClient("localhost")
