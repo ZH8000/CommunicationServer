@@ -242,6 +242,21 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   }
 
+  def addToLockList(record: Record) {
+    update(
+      tableName = "lock", 
+      query = MongoDBObject(
+        "lotNo" -> record.lotNo,
+        "partNo" -> record.partNo,
+        "workerMongoID" -> record.workID,
+        "status" -> record.machineStatus,
+        "shiftDate" -> record.shiftDate,
+        "insertDate" -> record.insertDate
+      ), 
+      record = record
+    )
+  }
+
   def addRecord(record: Record) {
 
     if (record.countQty >= 2000 || record.eventQty >= 2000) {
@@ -429,6 +444,10 @@ class MongoProcessor(mongoClient: MongoClient) {
           "order" -> newOperationTimeIndex
         )
       )
+    }
+
+    if (record.machineStatus.trim == "05") {
+      addToLockList(record)
     }
 
     if (record.isFromBarcode) {
