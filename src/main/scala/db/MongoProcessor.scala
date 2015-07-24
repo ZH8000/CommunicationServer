@@ -13,6 +13,7 @@ class MongoProcessor(mongoClient: MongoClient) {
   val logger = LoggerFactory.getLogger("SendNotificationEmail")
 
   val zhenhaiDB = mongoClient("zhenhai")
+  val dailyDB = mongoClient("zhenhaiDaily")
   val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
 
   def update(tableName: String, query: MongoDBObject, record: Record) {
@@ -259,6 +260,8 @@ class MongoProcessor(mongoClient: MongoClient) {
 
   def addRecord(record: Record) {
 
+    dailyDB(record.insertDate).insert(record.toMongoObject)
+
     if (record.countQty >= 2000 || record.eventQty >= 2000) {
       zhenhaiDB("strangeQty").insert(record.toMongoObject)
     }
@@ -451,8 +454,12 @@ class MongoProcessor(mongoClient: MongoClient) {
     }
 
     if (record.isFromBarcode) {
-      updateWorkerDaily(record)
-      updateWorkerPerformance(record)
+
+      if (record.machineStatus.trim != "02" && record.machineStatus.trim != "03") {
+        updateWorkerDaily(record)
+        updateWorkerPerformance(record)
+      }
+
       updateLotToMonth(record)
       updateDailyOrder(record)
       updateOrderStatus(record)
