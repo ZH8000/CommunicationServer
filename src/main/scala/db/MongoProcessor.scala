@@ -244,17 +244,17 @@ class MongoProcessor(mongoClient: MongoClient) {
   }
 
   def addToLockList(record: Record) {
-    update(
-      tableName = "lock", 
-      query = MongoDBObject(
+    val lockTable = zhenhaiDB("lock")
+    lockTable.insert(
+      MongoDBObject(
         "lotNo" -> record.lotNo,
         "partNo" -> record.partNo,
         "workerMongoID" -> record.workID,
         "status" -> record.machineStatus,
+        "timestamp" -> record.embDate,
         "shiftDate" -> record.shiftDate,
         "insertDate" -> record.insertDate
-      ), 
-      record = record
+      )
     )
   }
 
