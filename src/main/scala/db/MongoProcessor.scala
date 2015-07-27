@@ -251,6 +251,7 @@ class MongoProcessor(mongoClient: MongoClient) {
         "partNo" -> record.partNo,
         "workerMongoID" -> record.workID,
         "status" -> record.machineStatus,
+        "machineID" -> record.machID,
         "timestamp" -> record.embDate,
         "shiftDate" -> record.shiftDate,
         "insertDate" -> record.insertDate
