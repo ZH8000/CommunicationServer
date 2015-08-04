@@ -144,7 +144,7 @@ object Record {
       columns(10),
       columns(11),
       columns(12),
-      columns(13),
+      columns(13).trim,
       dateFormatter.format(new Date(timestamp * 1000)),
       Try{columns(14)}.getOrElse(""),
       dateFormatter.format(getShiftTime(timestamp))
