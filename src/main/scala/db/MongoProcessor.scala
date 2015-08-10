@@ -278,7 +278,6 @@ class MongoProcessor(mongoClient: MongoClient) {
      *
      *  @param  row   該維修行事曆的設定的 row
      *  @return       如果需要再次更換則為 true，否則為 false
-     *
      */
     def shouldReset(row: DBObject): Boolean = {
       val machineID = row.getAs[String]("machineID").getOrElse("")

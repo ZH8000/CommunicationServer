@@ -1,9 +1,30 @@
 package tw.com.zhenhai.model
 
+/**
+ *  此 Singleton 物件儲存了關於生產機台的資訊，包括每台機台的編號，型號，IP 位置等，
+ *  以及如何從機台本身的事件訊號代碼，轉換成整個網站的統一事件代碼。
+ *
+ */
 object MachineInfo {
 
+  /**
+   *  用來代表生產機台資訊的物件
+   *
+   *  @param    ip            機台的 IP 位址
+   *  @param    machineID     機台編號
+   *  @param    machineType   機台的制程（加締、組立、老化、加工……）
+   *  @param    model         機台型號
+   *  @param    note          備註
+   */
   case class MachineInfo(ip: String, machineID: String, machineType: Int, model: String, note: Option[String])
 
+  /**
+   *  統一計數事件 ID 對照表，型式為：
+   *
+   *  "機台型號" -＞ Map（原始事件ID -＞ 統一計數事件 ID）
+   *
+   *  關於詳細的 ID 意義，請參照系統設計說明文件
+   */
   val otherEventTable = Map(
     // 原始事件 ID -> 統整過後的統一計數事件 ID
     "CAS-3000SA" -> Map(8  -> 0),
@@ -40,6 +61,13 @@ object MachineInfo {
     "ACG-508F"   -> Map(3 -> 0)
   )
 
+  /**
+   *  統一錯誤事件 ID 對照表，型式為：
+   *
+   *  "機台型號" -＞ Map（原始事件ID -＞ 統一錯誤事件 ID）
+   *
+   *  關於詳細的 ID 意義，請參照系統設計說明文件
+   */
   val defactEventTable = Map(
     // 原始事件 ID -> 統整過後的統一錯誤事件 ID
     "TSW-100T" -> Map(
@@ -498,6 +526,12 @@ object MachineInfo {
     )
   )
 
+  /**
+   *  機台編號與生產 φ 別的對應
+   *
+   *  此為尚未實裝條碼系統時所使用，若已確認所有條碼裝已實裝，應將此
+   *  對照表刪除。
+   */
   val productMapping = Map(
     "A65"    -> "18",       "A41"    -> "12.5",    "A43"    -> "12.5",     
     "A42"    -> "12.5",     "A51"    -> "12.5",    "A40"    -> "12.5",
@@ -595,15 +629,21 @@ object MachineInfo {
     "G28"    -> "8x15"
   )
 
+  /**
+   *  製程代號與製程名稱的對應
+   */
   val machineTypeName = Map(
-    1 -> "加締卷取",  // E
-    2 -> "組立",      // G
-    3 -> "老化",      // A
-    4 -> "選別",      // A 左邊四台
-    5 -> "加工切角",  // T, C
-    6 -> "包裝"       // B
+    1 -> "加締卷取",  // 機台編號字首為 E 的機台
+    2 -> "組立",      // 機台編號字首為 G 的機台
+    3 -> "老化",      // 機台編號字首為 A 的機台
+    4 -> "選別",      // 機台編號字首為 A 的左邊四台機台
+    5 -> "加工切角",  // 機台編號字首為 T, C 的機台
+    6 -> "包裝"       // 機台編號字首為 B 的機台
   )
 
+  /**
+   *  機台列表，列出現存的所有機台
+   */
   val machineList = List(
     MachineInfo("192.168.10.1",   "E01",    1, "TSW-100T",    None),
     MachineInfo("192.168.10.2",   "G01",    2, "FTO-2200A",   None),
@@ -904,10 +944,10 @@ object MachineInfo {
     MachineInfo("192.168.20.38",  "A65",    3, "GT-1318P",    None),
     MachineInfo("192.168.20.39",  "A66",    3, "GT-480P",     None),
     MachineInfo("192.168.20.40",  "A67",    4, "新益昌",      Some("未安裝")),
-    MachineInfo("192.168.20.78",  "A68",    4, "ACG-308S-H",    Some("未安裝")),
-    MachineInfo("192.168.20.79",  "A69",    4, "ACG-508F",      Some("未安裝")),
-    MachineInfo("192.168.20.80",  "A70",    4, "ACG-508F",      Some("未安裝")),
-    MachineInfo("192.168.20.81",  "A71",    4, "ACG-508F",      Some("未安裝")),
+    MachineInfo("192.168.20.78",  "A68",    4, "ACG-308S-H",  Some("未安裝")),
+    MachineInfo("192.168.20.79",  "A69",    4, "ACG-508F",    Some("未安裝")),
+    MachineInfo("192.168.20.80",  "A70",    4, "ACG-508F",    Some("未安裝")),
+    MachineInfo("192.168.20.81",  "A71",    4, "ACG-508F",    Some("未安裝")),
     MachineInfo("192.168.20.41",  "T01",    5, "NCR-236A",    None),
     MachineInfo("192.168.20.42",  "T02",    5, "NCR-236A",    Some("無網路")),
     MachineInfo("192.168.20.43",  "T03",    5, "NCR-236A",    None),
@@ -946,11 +986,48 @@ object MachineInfo {
     MachineInfo("192.168.20.76",  "B08",    6, "TAP-306",     Some("不在地圖上"))
   )
 
-  val machineModel = machineList.map(machineInfo => machineInfo.machineID -> machineInfo.model).toMap
+  /**
+   *  機台編號到機台型號的對照表
+   */
+  val machineModel: Map[String, String] = machineList.map(machineInfo => machineInfo.machineID -> machineInfo.model).toMap
+
+  /**
+   *  機台編號到機台製程編號的對照表
+   */
   val machineTypeID = machineList.map(machineInfo => machineInfo.machineID -> machineInfo.machineType).toMap
 
+  /**
+   *  根據機台編號取得產品 φ 別
+   *
+   *  此為尚未實裝條碼系統時所使用，若已確認所有條碼裝已實裝，應將此
+   *  對函式刪除。
+   *
+   *  @param    machineID   機台編號
+   *  @return               產品φ別
+   */ 
   def getProduct(machineID: String) = productMapping.get(machineID).getOrElse("Unknown")
+
+  /**
+   *  根據機台編號取得機台的型號
+   *
+   *  @param    machineID     機台編號
+   *  @return                 機台型號
+   */
   def getModel(machineID: String) = machineModel.get(machineID).getOrElse("Unknown")
+
+  /**
+   *  根據機台編號取得製程 ID
+   *
+   *  @param    machineID   機台編號
+   *  @return               機台製程編號
+   */
   def getMachineTypeID(machineID: String) = machineTypeID.get(machineID).getOrElse(-1)
+
+  /**
+   *  根據機台編號取得製程名稱
+   *
+   *  @param    machineID   機台編號
+   *  @return               機台的製程名稱
+   */
   def getMachineType(machineID: String) = machineTypeName.get(getMachineTypeID(machineID)).getOrElse("Unknown")
 }
