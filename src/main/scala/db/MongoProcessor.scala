@@ -26,6 +26,7 @@ class MongoProcessor(mongoClient: MongoClient) {
   private val SCAN_BARCODE = "09"
 
   val zhenhaiDB = mongoClient("zhenhai")
+  val zhenhaiDailyDB = mongoClient("zhenhaiDaily")
   val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
 
   /**
@@ -637,6 +638,8 @@ class MongoProcessor(mongoClient: MongoClient) {
    *  @param     要處理的資料
    */
   def addRecord(record: Record) {
+
+    zhenhaiDailyDB(record.insertDate).insert(record.toMongoObject)
 
     // 理論上每一筆生產資料的良品數或事件數不應該超過 2000，
     // 但有時機台會有異常訊號造成爆量。

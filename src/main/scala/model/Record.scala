@@ -25,6 +25,7 @@ import scala.util.Try
  *  @param    insertDate            此筆資料的原始日期
  *  @param    macAddress            機台的 MAC Address
  *  @param    shiftDate             機台的工班日期
+ *  @param    rawData               原始傳回的資料
  */
 case class Record(
   rawLotNo: String, 
@@ -43,7 +44,8 @@ case class Record(
   machineStatus: String,
   insertDate: String,
   macAddress: String,
-  shiftDate: String
+  shiftDate: String,
+  rawData: String
 ) {
 
   /**
@@ -194,7 +196,8 @@ case class Record(
     "insertDate" ->  insertDate,
     "mac_address" -> macAddress,
     "shiftDate" -> shiftDate,
-    "originEventID" -> eventID
+    "originEventID" -> eventID,
+    "rawData" -> rawData
   )
 
 }
@@ -244,7 +247,8 @@ object Record {
       columns(13).trim,
       dateFormatter.format(new Date(timestamp * 1000)),
       Try{columns(14)}.getOrElse(""),
-      dateFormatter.format(getShiftTime(timestamp))
+      dateFormatter.format(getShiftTime(timestamp)),
+      line
     )
   }
 }
