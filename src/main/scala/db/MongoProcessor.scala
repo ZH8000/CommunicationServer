@@ -311,16 +311,13 @@ class MongoProcessor(mongoClient: MongoClient) {
    *  這個函式會取回目前系統內特定工單號的刷條碼次數。
    *
    *  @param      record       要查詢的記錄
-   *  @return                  這筆資料的工單號是第幾次被刷，若沒被刷過則為 None，否則為 Some(次數)
+   *  @return                  這筆資料的工單號是第幾次被刷，若未被刷過則為 0
    *
    */
-  def getLastOperationTimeIndex(record: Record): Option[Long] = {
+  def getLastOperationTimeIndex(record: Record): Long = {
     val operationTime = zhenhaiDB("operationTime")
 
-    operationTime.find(MongoDBObject("lotNo" -> record.lotNo, "partNo" -> record.partNo)).toList
-                 .sortWith((a, b) => a.get("order").toString.toLong > b.get("order").toString.toLong)
-                 .map(x => x.get("order").toString.toLong)
-                 .headOption
+    operationTime.find(MongoDBObject("lotNo" -> record.lotNo, "partNo" -> record.partNo)).size
   }
 
   /**
@@ -338,11 +335,14 @@ class MongoProcessor(mongoClient: MongoClient) {
    *  @param      record       要處理的記錄物件
    */
   def incrementOperationTimeIndex(record: Record) {
+    /*
     val operationTime = zhenhaiDB("operationTime")
+    val lastIndex = getLastOperationTimeIndex(record)
+    val query = MongoDBObject("lotNo" -> record.lotNo, "partNo" -> record.partNo, "order" -> lastIndex)
+    val recordHolder = operationTime.find(query).toList.headOption
+
     val operationTimeRecord = for {
-      lastIndex <- getLastOperationTimeIndex(record)
-      query = MongoDBObject("lotNo" -> record.lotNo, "partNo" -> record.partNo, "order" -> lastIndex)
-      existRecord <- operationTime.find().toList.headOption
+      existRecord <- operationTime.find(query).toList.headOption
       currentTimestamp <- Option(existRecord.get("currentTimestamp")).map(_.asInstanceOf[Long])
     } yield (lastIndex, currentTimestamp)
 
@@ -358,6 +358,7 @@ class MongoProcessor(mongoClient: MongoClient) {
 
     }
 
+    */
   }
 
   /**
@@ -609,28 +610,6 @@ class MongoProcessor(mongoClient: MongoClient) {
     )
   }
 
-  /**
-   *  更新操作總時間
-   *
-   *  此資料表會依據目前的狀況，更新 operationTime 資料表裡，這個
-   *  工單後最後一批次的最新生產狀態的時間。
-   *
-   *  @param    record    要處理的資料
-   */
-  def updateOperationTime(record: Record) {
-    val operationTime = zhenhaiDB("operationTime")
-    val newOperationTimeIndex = getLastOperationTimeIndex(record).map(i => i + 1).getOrElse(0)
-
-    operationTime.insert(
-      MongoDBObject(
-        "lotNo"   -> record.lotNo, 
-        "partNo"  -> record.partNo, 
-        "startTimestamp" -> record.embDate, 
-        "currentTimestamp" -> record.embDate, 
-        "order" -> newOperationTimeIndex
-      )
-    )
-  }
 
   /**
    *  將 RaspberryPi 送過來的資料處理分析
@@ -638,6 +617,8 @@ class MongoProcessor(mongoClient: MongoClient) {
    *  @param     要處理的資料
    */
   def addRecord(record: Record) {
+
+    //println("process record:" + record.rawData)
 
     zhenhaiDailyDB(record.insertDate).insert(record.toMongoObject)
 
@@ -676,12 +657,14 @@ class MongoProcessor(mongoClient: MongoClient) {
       updateMachineMaintainLog(record)
     }
 
+    /*
     if (record.machineStatus == SCAN_BARCODE) {
-      incrementOperationTimeIndex(record)
+      incrementOperationTimeIndex(record)	// Peformance bottle neck
     }
+    */
 
     if (record.machineStatus == ENTER_LOCK) {
-      addToLockList(record)
+      addToLockList(record)	// Peformance OK. but should refactor?
     }
 
     if (record.isFromBarcode) {
@@ -692,9 +675,11 @@ class MongoProcessor(mongoClient: MongoClient) {
       }
 
       updateLotToMonth(record)
-      updateOrderStatus(record)
+      updateOrderStatus(record)			// Peformance bottle neck
       updateProductionStatus(record)
+      /*
       updateOperationTime(record)
+      */
     }
 
   }

@@ -5,6 +5,7 @@ import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.QueueingConsumer
+import com.rabbitmq.client.MessageProperties
 
 import java.io._
 import java.text.SimpleDateFormat
@@ -142,16 +143,23 @@ class DeQueueServerDaemon extends Daemon {
         while (!shouldStopped) {
           val delivery = consumer.nextDelivery()
           val message = new String(delivery.getBody())
-  
-          val dequeueWork = Future {
-            val mongoProcessor = new MongoProcessor(mongoClient)
 
-            addToRawTable(mongoClient, message)
+
+          val dequeueWork = Future {
+
+            val mongoProcessor = new MongoProcessor(mongoClient)
 
             Record(message) match {
               case Success(record) => processRecord(mongoProcessor, record, message) 
               case _               => // 如果取出的資料格式有誤，不能轉換成 Scala 物件，則不做處理
             }
+
+	    /*
+            channel.basicPublish(
+              "", "rawDataLine", MessageProperties.PERSISTENT_TEXT_PLAIN,
+              message.getBytes
+            )
+            */
 
             // 通知 RabbitMQ 我們已成功處理此筆資料
             channel.basicAck(delivery.getEnvelope.getDeliveryTag, false)
