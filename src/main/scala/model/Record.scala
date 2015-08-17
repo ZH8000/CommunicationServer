@@ -178,25 +178,9 @@ case class Record(
    *  將此記錄物件轉換成 MongoDB 的資料列，以方便存入 MongoDB
    */
   def toMongoObject = MongoDBObject(
-    "part_no" -> partNo,
-    "lot_no" -> lotNo,
-    "work_qty" -> workQty,
-    "count_qty" -> countQty, 
-    "emb_date" -> embDate,
-    "event_qty" -> eventQty,
-    "mach_ip" -> machineIP,
-    "defact_id" -> defactID,
-    "mach_id" -> machID,
-    "work_id" -> workID,
-    "CX" -> cxOrStartTimestamp,
-    "DX" -> dx,
-    "LC" -> lc,
-    "mach_status" -> machineStatus,
-    "product" -> product,
     "insertDate" ->  insertDate,
-    "mac_address" -> macAddress,
     "shiftDate" -> shiftDate,
-    "originEventID" -> eventID,
+    "machineID" -> machID,
     "rawData" -> rawData
   )
 

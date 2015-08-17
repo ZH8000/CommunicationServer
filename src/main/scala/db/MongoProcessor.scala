@@ -100,18 +100,14 @@ class MongoProcessor(mongoClient: MongoClient) {
    */
   def updateWorkerPerformance(record: Record) {
 
+    val month = record.shiftDate.substring(0, 7)
     val query = MongoDBObject(
-      "timestamp"     -> record.insertDate, 
       "shiftDate"     -> record.shiftDate,
-      "month"         -> record.shiftDate.substring(0, 7),
-      "workerMongoID" -> record.workID,
-      "machineID"     -> record.machID,
-      "productCode"   -> record.fullProductCode,
-      "lotNo"         -> record.lotNo
+      "workerMongoID" -> record.workID
     )
 
-    zhenhaiDB("workerPerformance").update(query, $inc("countQty" -> record.countQty), upsert = true)
-    zhenhaiDB("workerPerformance").ensureIndex(query.mapValues(x => 1))
+    zhenhaiDB(s"workerPerformance-$month").update(query, $inc("countQty" -> record.countQty), upsert = true)
+    zhenhaiDB(s"workerPerformance-$month").ensureIndex(query.mapValues(x => 1))
   }
 
 
@@ -315,9 +311,18 @@ class MongoProcessor(mongoClient: MongoClient) {
    *
    */
   def getLastOperationTimeIndex(record: Record): Long = {
-    val operationTime = zhenhaiDB("operationTime")
-
-    operationTime.find(MongoDBObject("lotNo" -> record.lotNo, "partNo" -> record.partNo)).size
+    val month = record.shiftDate.substring(0, 7)
+    val operationTime = zhenhaiDB(s"operationTime-$month")
+    operationTime.count(
+      MongoDBObject(
+        "machineID" -> record.machID,
+        "lotNo" -> record.lotNo,
+        "partNo" -> record.partNo,
+        "productCode"   -> record.fullProductCode,
+        "shiftDate"     -> record.shiftDate,
+        "workerID" -> record.workID
+      )
+    )
   }
 
   /**
@@ -335,34 +340,46 @@ class MongoProcessor(mongoClient: MongoClient) {
    *  @param      record       要處理的記錄物件
    */
   def incrementOperationTimeIndex(record: Record) {
-    /*
-    val operationTime = zhenhaiDB("operationTime")
+    val month = record.shiftDate.substring(0, 7)
+    val operationTime = zhenhaiDB(s"operationTime-$month")
     val lastIndex = getLastOperationTimeIndex(record)
-    val query = MongoDBObject("lotNo" -> record.lotNo, "partNo" -> record.partNo, "order" -> lastIndex)
-    val recordHolder = operationTime.find(query).toList.headOption
 
-    val operationTimeRecord = for {
-      existRecord <- operationTime.find(query).toList.headOption
-      currentTimestamp <- Option(existRecord.get("currentTimestamp")).map(_.asInstanceOf[Long])
-    } yield (lastIndex, currentTimestamp)
+    operationTime.insert(
+      MongoDBObject(
+        "machineID" -> record.machID,
+        "lotNo" -> record.lotNo,
+        "partNo" -> record.partNo,
+        "productCode"   -> record.fullProductCode,
+        "shiftDate"     -> record.shiftDate,
+        "workerID" -> record.workID,
+        "startTimestamp" -> record.embDate,
+        "order" -> (lastIndex + 1),
+        "countQty" -> record.countQty,
+        "currentTimestamp" -> record.embDate
+      )
+    )
+  }
 
+  def updateOperationTime(record: Record) {
+    val month = record.shiftDate.substring(0, 7)
+    val operationTime = zhenhaiDB(s"operationTime-$month")
+    val lastIndex = getLastOperationTimeIndex(record)
+    val query = MongoDBObject(
+      "machineID" -> record.machID,
+      "lotNo" -> record.lotNo,
+      "partNo" -> record.partNo,
+      "productCode"   -> record.fullProductCode,
+      "shiftDate"     -> record.shiftDate,
+      "workerID" -> record.workID,
+      "order" -> lastIndex
+    )
 
-    operationTimeRecord.foreach { case(lastIndex, currentTimestamp) =>
-      
-      if (currentTimestamp < record.embDate) {
-        operationTime.update(
-          MongoDBObject("lotNo" -> record.lotNo, "partNo" -> record.partNo, "order" -> lastIndex),
-          $set("currentTimestamp" -> record.embDate)
-        )
-      }
-
-    }
-
-    */
+    operationTime.update(query, $set("currentTimestamp" -> record.embDate))
+    operationTime.update(query, $inc("countQty" -> record.countQty))
   }
 
   /**
-   *  新增至鎖機記錄列表
+   *  新增至鎖機記錄表
    *
    *  為了在「人員效率」 Excel 表中計算每個作業員每日的鎖機的總時間，必須要將
    *  鎖機的的狀況依照員工編號以及工班日期分類，並記錄到 lock 資料表
@@ -370,7 +387,8 @@ class MongoProcessor(mongoClient: MongoClient) {
    *  @param      record    要記錄的資料
    */
   def addToLockList(record: Record) {
-    val lockTable = zhenhaiDB("lock")
+    val month = record.shiftDate.substring(0, 7)
+    val lockTable = zhenhaiDB(s"lock-$month")
     lockTable.insert(
       MongoDBObject(
         "lotNo" -> record.lotNo,
@@ -379,8 +397,7 @@ class MongoProcessor(mongoClient: MongoClient) {
         "status" -> record.machineStatus,
         "machineID" -> record.machID,
         "timestamp" -> record.embDate,
-        "shiftDate" -> record.shiftDate,
-        "insertDate" -> record.insertDate
+        "shiftDate" -> record.shiftDate
       )
     )
   }
@@ -610,6 +627,20 @@ class MongoProcessor(mongoClient: MongoClient) {
     )
   }
 
+  def updateDailyMachineCount(record: Record) {
+    
+    val tableName = "dailyMachineCount"
+    val query = MongoDBObject(
+      "machineID"  -> record.machID,
+      "insertDate" -> record.insertDate
+    )
+
+    update(tableName, query, record)
+    val operation = $set("status" -> record.machineStatus)
+    zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
+    zhenhaiDB(tableName).update(query, operation)
+  }
+
 
   /**
    *  將 RaspberryPi 送過來的資料處理分析
@@ -617,8 +648,6 @@ class MongoProcessor(mongoClient: MongoClient) {
    *  @param     要處理的資料
    */
   def addRecord(record: Record) {
-
-    //println("process record:" + record.rawData)
 
     zhenhaiDailyDB(record.insertDate).insert(record.toMongoObject)
 
@@ -630,6 +659,8 @@ class MongoProcessor(mongoClient: MongoClient) {
     if (record.countQty >= 2000 || record.eventQty >= 2000) {
       zhenhaiDB("strangeQty").insert(record.toMongoObject)
     }
+
+    updateDailyMachineCount(record)
 
     // 良品或不良事件
     if (record.countQty > 0 || record.defactID != -1) {
@@ -657,14 +688,12 @@ class MongoProcessor(mongoClient: MongoClient) {
       updateMachineMaintainLog(record)
     }
 
-    /*
     if (record.machineStatus == SCAN_BARCODE) {
-      incrementOperationTimeIndex(record)	// Peformance bottle neck
+      incrementOperationTimeIndex(record)
     }
-    */
 
     if (record.machineStatus == ENTER_LOCK) {
-      addToLockList(record)	// Peformance OK. but should refactor?
+      addToLockList(record)
     }
 
     if (record.isFromBarcode) {
@@ -677,9 +706,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       updateLotToMonth(record)
       updateOrderStatus(record)			// Peformance bottle neck
       updateProductionStatus(record)
-      /*
       updateOperationTime(record)
-      */
     }
 
   }
