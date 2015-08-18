@@ -21,15 +21,15 @@ ssh -p $REMOTE_PORT zhenhai@$REMOTE_IP $REMOTE_SCRIPT_DIR/$REMOTE_SCRIPT_DUMP $d
 
 echo "============= RESTORE DATABASE ============="
 
-scp -P $REMOTE_PORT zhenhai@$REMOTE_IP:$REMOTE_SCRIPT_DIR/daily$yDateString.tar.gz backup/raw/$dateString.tar.gz
+scp -P $REMOTE_PORT zhenhai@$REMOTE_IP:$REMOTE_SCRIPT_DIR/daily$yDateString.tar.gz /home/zhenhai/dailyImport/backup/raw/
 scp -P $REMOTE_PORT zhenhai@$REMOTE_IP:$REMOTE_SCRIPT_DIR/$dateString.tar.gz $dateString.tar.gz
 
 #
 tar -xvzf $dateString.tar.gz
 mongorestore --db zhenhai --drop export$dateString/zhenhai
 
-rm -rvf export$dateString/
-mv $dateString.tar.gz backup/
+rm -rvf export*
+mv $dateString.tar.gz /home/zhenhai/dailyImport/backup/
 
 ssh -p $REMOTE_PORT zhenhai@$REMOTE_IP $REMOTE_SCRIPT_DIR/$REMOTE_SCRIPT_CLEAN
 

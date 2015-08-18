@@ -17,7 +17,7 @@ exportDailyFile="daily$yDateString.tar.gz"
 cd "$(dirname "$0")"
 echo "Dump mongoDB collection $dateString..."
 mongodump --db zhenhai -o $exportDir
-mongodump --db zhenhaiRaw --collection $dateString -o $exportDailyDir
+mongodump --db zhenhaiDaily --collection $dateString -o $exportDailyDir
 
 tar -cvzf $exportFile $exportDir/
 tar -cvzf $exportDailyFile $exportDailyDir/
