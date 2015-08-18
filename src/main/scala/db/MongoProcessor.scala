@@ -315,18 +315,19 @@ class MongoProcessor(mongoClient: MongoClient) {
     val operationTime = zhenhaiDB(s"operationTime-$month")
     operationTime.count(
       MongoDBObject(
-        "machineID" -> record.machID,
-        "lotNo" -> record.lotNo,
-        "partNo" -> record.partNo,
-        "productCode"   -> record.fullProductCode,
-        "shiftDate"     -> record.shiftDate,
-        "workerID" -> record.workID
+        "machineID"   -> record.machID,
+        "lotNo"       -> record.lotNo,
+        "partNo"      -> record.partNo,
+        "productCode" -> record.fullProductCode,
+        "shiftDate"   -> record.shiftDate,
+        "workerID"    -> record.workID,
+        "machineType" -> record.machineType
       )
     )
   }
 
   /**
-   *  更新工單號最後的生產時間
+   *  更新工單號最後的生產時間的序號
    *
    *  目前的系統設計上，由於可能遇到停電、維修等異常狀況，所以一張工單不一定
    *  會只有刷一次的條碼。有可能第一次刷完條碼後，因為維修而暫時停工，需要再
@@ -352,6 +353,7 @@ class MongoProcessor(mongoClient: MongoClient) {
         "productCode"   -> record.fullProductCode,
         "shiftDate"     -> record.shiftDate,
         "workerID" -> record.workID,
+        "machineType" -> record.machineType,
         "startTimestamp" -> record.embDate,
         "order" -> (lastIndex + 1),
         "countQty" -> record.countQty,
@@ -360,6 +362,11 @@ class MongoProcessor(mongoClient: MongoClient) {
     )
   }
 
+  /**
+   *  更新工單號最後的生產時間
+   *
+   *  @param    record    要處理的資料
+   */
   def updateOperationTime(record: Record) {
     val month = record.shiftDate.substring(0, 7)
     val operationTime = zhenhaiDB(s"operationTime-$month")
@@ -371,6 +378,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       "productCode"   -> record.fullProductCode,
       "shiftDate"     -> record.shiftDate,
       "workerID" -> record.workID,
+      "machineType" -> record.machineType,
       "order" -> lastIndex
     )
 
@@ -627,8 +635,12 @@ class MongoProcessor(mongoClient: MongoClient) {
     )
   }
 
+  /**
+   *  更新每台機台當日的累計良品數和事件數以及最新狀態代碼
+   *
+   *  @param  record  要處理的資料
+   */
   def updateDailyMachineCount(record: Record) {
-    
     val tableName = "dailyMachineCount"
     val query = MongoDBObject(
       "machineID"  -> record.machID,
@@ -641,6 +653,23 @@ class MongoProcessor(mongoClient: MongoClient) {
     zhenhaiDB(tableName).update(query, operation)
   }
 
+  /**
+   *  更新每個工號的生產目標量
+   *
+   *  @param  record  要處理的資料
+   */
+  def updateWorkQty(record: Record) {
+    val month = record.shiftDate.substring(0, 7)
+    val tableName = s"workQty-$month"
+    val operation = $set("workQty" -> record.workQty)
+    val query = MongoDBObject(
+      "lotNo" -> record.lotNo,
+      "partNo" -> record.partNo
+    )
+
+    zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
+    zhenhaiDB(tableName).update(query, operation, upsert = true)
+  }
 
   /**
    *  將 RaspberryPi 送過來的資料處理分析
@@ -660,6 +689,7 @@ class MongoProcessor(mongoClient: MongoClient) {
       zhenhaiDB("strangeQty").insert(record.toMongoObject)
     }
 
+    updateWorkQty(record)
     updateDailyMachineCount(record)
 
     // 良品或不良事件

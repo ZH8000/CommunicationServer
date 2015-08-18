@@ -949,7 +949,7 @@ object MachineInfo {
     MachineInfo("192.168.20.80",  "A70",    4, "ACG-508F",    Some("未安裝")),
     MachineInfo("192.168.20.81",  "A71",    4, "ACG-508F",    Some("未安裝")),
     MachineInfo("192.168.20.41",  "T01",    5, "NCR-236A",    None),
-    MachineInfo("192.168.20.42",  "T02",    5, "NCR-236A",    Some("無網路")),
+    MachineInfo("192.168.20.42",  "T02",    5, "NCR-236A",    None),
     MachineInfo("192.168.20.43",  "T03",    5, "NCR-236A",    None),
     MachineInfo("192.168.20.44",  "T04",    5, "NCR-236A",    None),
     MachineInfo("192.168.20.45",  "T05",    5, "NCR-236A",    None),
