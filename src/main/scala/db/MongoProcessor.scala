@@ -6,6 +6,7 @@ import com.mongodb.casbah.Imports._
 
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Calendar
 import org.slf4j.LoggerFactory
 
 /**
@@ -669,6 +670,46 @@ class MongoProcessor(mongoClient: MongoClient) {
 
     zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
     zhenhaiDB(tableName).update(query, operation, upsert = true)
+  }
+
+  def updateDefactSummaryStep1(record: Record) {
+
+    val month = record.shiftDate.substring(0, 7)
+    val tableName = s"defactSummary-$month"
+
+
+    val query = MongoDBObject(
+      "machineID" -> record.machID,
+      "insertDate" -> record.insertDate,
+      "shit" -> record.shift,
+      "product" -> record.capacityPrefix
+    )
+
+    val operation = $inc("countQty" -> record.countQty)
+
+    zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
+    zhenhaiDB(tableName).update(query, operation, upsert = true)
+
+    val eventOperation = record.defactID match {
+      case 0    => Some($inc("short" -> record.eventQty))
+      case 3    => Some($inc("stick" -> record.eventQty))
+      case 29   => Some($inc("tape" -> record.eventQty))
+      case 1    => Some($inc("roll" -> record.eventQty))
+      case 201  => Some($inc("plus" -> record.eventQty))
+      case 202  => Some($inc("minus" -> record.eventQty))
+      case _    => None
+
+    }
+
+    eventOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
+  }
+
+  def updateDefactSummaray(record: Record) {
+    record.machineType match {
+      case 1 => updateDefactSummaryStep1(record)
+      case 2 => 
+      case _ =>
+    }
   }
 
   /**

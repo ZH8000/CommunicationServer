@@ -1,6 +1,7 @@
 package tw.com.zhenhai.model
 
 import java.util.Date
+import java.util.Calendar
 import java.text.SimpleDateFormat
 import com.mongodb.casbah.Imports._
 import scala.util.Try
@@ -67,6 +68,19 @@ case class Record(
    *  料號
    */
   def partNo = if (!isFromBarcode) "none" else rawPartNo
+
+  /**
+   *  取得早班或晚班
+   *
+   *  @return   若早班則為 M，晚班則為 N
+   */
+  def shift = {
+    val calendar = Calendar.getInstance
+    calendar.setTime(new Date(embDate * 1000))
+    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+
+    if (hour >= 7 && hour < 19) "M" else "N"
+  }
 
   /**
    *  φ 別
