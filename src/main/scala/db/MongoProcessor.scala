@@ -143,6 +143,29 @@ class MongoProcessor(mongoClient: MongoClient) {
     zhenhaiDB("productionStatus").ensureIndex(query.mapValues(x => 1))
   }
 
+  def updateProductionHistoryStatus(record: Record) {
+    val query = MongoDBObject(
+      "partNo" -> record.partNo,
+      "lotNo" -> record.lotNo,
+      "product" -> record.product,
+      "shiftDate" -> record.shiftDate
+    )
+
+    val fieldName = MachineInfo.getMachineTypeID(record.machID) match {
+      case 1 => "step1" // 加締
+      case 2 => "step2" // 組立
+      case 3 => "step3" // 老化
+      case 4 => "step4" // 選別
+      case 5 => "step5" // 加工切角
+      case _ => "unknownStep"
+    }
+
+    zhenhaiDB("productionStatusHistory").update(query, $set(fieldName + "Status" -> record.machineStatus), upsert = true)
+    zhenhaiDB("productionStatusHistory").update(query, $set(fieldName + "Machine" -> record.machID))
+    zhenhaiDB("productionStatusHistory").ensureIndex(query.mapValues(x => 1))
+  }
+
+
   /**
    *  記錄每一個工單號第一次出現的日期
    *
@@ -677,12 +700,15 @@ class MongoProcessor(mongoClient: MongoClient) {
     val month = record.shiftDate.substring(0, 7)
     val tableName = s"defactSummary-$month"
 
-
     val query = MongoDBObject(
+      "machineType" -> record.machineType,
       "machineID" -> record.machID,
-      "insertDate" -> record.insertDate,
-      "shit" -> record.shift,
-      "product" -> record.capacityPrefix
+      "machineModel" -> MachineInfo.getModel(record.machID),
+      "shiftDate" -> record.shiftDate,
+      "shift" -> record.shift,
+      "area" -> record.area,
+      "floor" -> record.floor,
+      "product" -> record.fullProductCode
     )
 
     val operation = $inc("countQty" -> record.countQty)
@@ -690,24 +716,141 @@ class MongoProcessor(mongoClient: MongoClient) {
     zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
     zhenhaiDB(tableName).update(query, operation, upsert = true)
 
-    val eventOperation = record.defactID match {
+    val defactOperation = record.defactID match {
       case 0    => Some($inc("short" -> record.eventQty))
       case 3    => Some($inc("stick" -> record.eventQty))
       case 29   => Some($inc("tape" -> record.eventQty))
       case 1    => Some($inc("roll" -> record.eventQty))
-      case 201  => Some($inc("plus" -> record.eventQty))
-      case 202  => Some($inc("minus" -> record.eventQty))
       case _    => None
 
+    }
+
+    defactOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
+
+    val eventOperation = record.otherEventID match {
+      case 201  => Some($inc("plus" -> record.eventQty))
+      case 202  => Some($inc("minus" -> record.eventQty))
+      case _ => None
     }
 
     eventOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
   }
 
-  def updateDefactSummaray(record: Record) {
+  def updateDefactSummaryStep2(record: Record) {
+    val month = record.shiftDate.substring(0, 7)
+    val tableName = s"defactSummary-$month"
+
+    val query = MongoDBObject(
+      "machineType" -> record.machineType,
+      "machineID" -> record.machID,
+      "machineModel" -> MachineInfo.getModel(record.machID),
+      "shiftDate" -> record.shiftDate,
+      "shift" -> record.shift,
+      "area" -> record.area,
+      "floor" -> record.floor,
+      "product" -> record.fullProductCode
+    )
+
+    val operation = $inc("countQty" -> record.countQty)
+
+    zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
+    zhenhaiDB(tableName).update(query, operation, upsert = true)
+
+    val defactOperation = record.defactID match {
+      case 104  => Some($inc("defactD" -> record.eventQty))
+      case 119  => Some($inc("white" -> record.eventQty))
+      case _    => None
+
+    }
+
+    defactOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
+
+    val eventOperation = record.otherEventID match {
+      case 103  => Some($inc("total" -> record.eventQty))
+      case 105  => Some($inc("rubber" -> record.eventQty))
+      case 106  => Some($inc("shell" -> record.eventQty))
+      case _ => None
+    }
+
+    eventOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
+  }
+
+  def updateDefactSummaryStep3(record: Record) {
+    val month = record.shiftDate.substring(0, 7)
+    val tableName = s"defactSummary-$month"
+
+    val query = MongoDBObject(
+      "machineType" -> record.machineType,
+      "machineID" -> record.machID,
+      "machineModel" -> MachineInfo.getModel(record.machID),
+      "shiftDate" -> record.shiftDate,
+      "shift" -> record.shift,
+      "area" -> record.area,
+      "floor" -> record.floor,
+      "product" -> record.fullProductCode
+    )
+
+    val operation = $inc("countQty" -> record.countQty)
+
+    zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
+    zhenhaiDB(tableName).update(query, operation, upsert = true)
+
+    val defactOperation = record.defactID match {
+      case 202  => Some($inc("short" -> record.eventQty))
+      case 201  => Some($inc("open" -> record.eventQty))
+      case 205  => Some($inc("capacity" -> record.eventQty))
+      case 206  => Some($inc("lose" -> record.eventQty))
+      case 203  => Some($inc("lc" -> record.eventQty))
+      case 207  => Some($inc("retest" -> record.eventQty))
+      case _    => None
+
+    }
+
+    defactOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
+
+    val eventOperation = record.otherEventID match {
+      case 0  => Some($inc("total" -> record.eventQty))
+      case _ => None
+    }
+
+    eventOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
+  }
+
+  def updateDefactSummaryStep5(record: Record) {
+    val month = record.shiftDate.substring(0, 7)
+    val tableName = s"defactSummary-$month"
+
+    val query = MongoDBObject(
+      "machineType" -> record.machineType,
+      "machineID" -> record.machID,
+      "machineModel" -> MachineInfo.getModel(record.machID),
+      "shiftDate" -> record.shiftDate,
+      "shift" -> record.shift,
+      "area" -> record.area,
+      "floor" -> record.floor,
+      "product" -> record.fullProductCode
+    )
+
+    val operation = $inc("countQty" -> record.countQty)
+
+    zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
+    zhenhaiDB(tableName).update(query, operation, upsert = true)
+
+    val eventOperation = record.otherEventID match {
+      case 0  => Some($inc("total" -> record.eventQty))
+      case _ => None
+    }
+
+    eventOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
+  }
+
+
+  def updateDefactSummary(record: Record) {
     record.machineType match {
       case 1 => updateDefactSummaryStep1(record)
-      case 2 => 
+      case 2 => updateDefactSummaryStep2(record)
+      case 3 => updateDefactSummaryStep3(record)
+      case 5 => updateDefactSummaryStep5(record)
       case _ =>
     }
   }
@@ -721,6 +864,9 @@ class MongoProcessor(mongoClient: MongoClient) {
 
     zhenhaiDailyDB(record.insertDate).insert(record.toMongoObject)
 
+    updateMachineStatus(record)
+    updateDailyMachineCount(record)
+
     // 理論上每一筆生產資料的良品數或事件數不應該超過 2000，
     // 但有時機台會有異常訊號造成爆量。
     //
@@ -730,54 +876,58 @@ class MongoProcessor(mongoClient: MongoClient) {
       zhenhaiDB("strangeQty").insert(record.toMongoObject)
     }
 
-    updateWorkQty(record)
-    updateDailyMachineCount(record)
+    val isRealData = record.partNo != "0" && record.lotNo != "0"
 
-    // 良品或不良事件
-    if (record.countQty > 0 || record.defactID != -1) {
-      updateByProductSummary(record)
-      updateRecordByDate(record)
-      updateDailyDefact(record)
-      updateMachineCounter(record)
-      updateAlarmStatus(record)
-    }
+    if (record.partNo != "0" && record.lotNo != "0") {
+      updateWorkQty(record)
+      updateDefactSummary(record)
 
-    // 不良事件
-    if (record.eventQty > 0 && record.defactID != -1) {
-      updateDefactReasonAndMachine(record)
-    }
-
-    // 其他統計事件
-    if (record.otherEventID != -1) {
-      updateOtherEvent(record)
-    }
-
-    updateDailyRecord(record)
-    updateMachineStatus(record)
-
-    if (record.machineStatus == ENTER_MAINTAIN || record.machineStatus == EXIT_MAINTAIN) {
-      updateMachineMaintainLog(record)
-    }
-
-    if (record.machineStatus == SCAN_BARCODE) {
-      incrementOperationTimeIndex(record)
-    }
-
-    if (record.machineStatus == ENTER_LOCK) {
-      addToLockList(record)
-    }
-
-    if (record.isFromBarcode) {
-
-      if (record.machineStatus != ENTER_MAINTAIN && record.machineStatus != EXIT_MAINTAIN) {
-        updateWorkerDaily(record)
-        updateWorkerPerformance(record)
+      // 良品或不良事件
+      if (record.countQty > 0 || record.defactID != -1) {
+        updateByProductSummary(record)
+        updateRecordByDate(record)
+        updateDailyDefact(record)
+        updateMachineCounter(record)
+        updateAlarmStatus(record)
       }
 
-      updateLotToMonth(record)
-      updateOrderStatus(record)			// Peformance bottle neck
-      updateProductionStatus(record)
-      updateOperationTime(record)
+      // 不良事件
+      if (record.eventQty > 0 && record.defactID != -1) {
+        updateDefactReasonAndMachine(record)
+      }
+
+      // 其他統計事件
+      if (record.otherEventID != -1) {
+        updateOtherEvent(record)
+      }
+
+      updateDailyRecord(record)
+
+      if (record.machineStatus == ENTER_MAINTAIN || record.machineStatus == EXIT_MAINTAIN) {
+        updateMachineMaintainLog(record)
+      }
+
+      if (record.machineStatus == SCAN_BARCODE) {
+        incrementOperationTimeIndex(record)
+      }
+
+      if (record.machineStatus == ENTER_LOCK) {
+        addToLockList(record)
+      }
+
+      if (record.isFromBarcode) {
+
+        if (record.machineStatus != ENTER_MAINTAIN && record.machineStatus != EXIT_MAINTAIN) {
+          updateWorkerDaily(record)
+          updateWorkerPerformance(record)
+        }
+
+        updateLotToMonth(record)
+        updateOrderStatus(record)			// Peformance bottle neck
+        updateProductionStatus(record)
+        updateProductionHistoryStatus(record)
+        updateOperationTime(record)
+      }
     }
 
   }

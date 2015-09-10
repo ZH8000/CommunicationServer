@@ -214,6 +214,7 @@ object MachineInfo {
          32  -> 116,
          33  -> 117,
          31  -> 118,
+         20  -> 119,
          35  -> 122,
          36  -> 123,
          38  -> 125,
@@ -1061,6 +1062,7 @@ object MachineInfo {
     "E49-S2" -> AreaInfo(2, "4"),  "E49-K1" -> AreaInfo(2, "4"),   "E49-K2" -> AreaInfo(2, "4"), 
     "G30" -> AreaInfo(2, "4"),   "E21" -> AreaInfo(2, "4"),    "G42" -> AreaInfo(2, "4"), 
     "E01" -> AreaInfo(2, "4"),   "E30" -> AreaInfo(2, "4"),    "G21" -> AreaInfo(2, "4"), 
+    "E79" -> AreaInfo(2, "4"),
     "E42" -> AreaInfo(2, "4"),   "G01" -> AreaInfo(2, "4"),    "T06" -> AreaInfo(1, "舊"), 
     "T07" -> AreaInfo(1, "舊"),  "T16" -> AreaInfo(1, "舊"),   "T08" -> AreaInfo(1, "舊"), 
     "A37" -> AreaInfo(1, "舊"),  "A27" -> AreaInfo(1, "舊"),   "A25" -> AreaInfo(1, "舊"), 
@@ -1092,7 +1094,8 @@ object MachineInfo {
     "A63" -> AreaInfo(1, "新"),  "A49" -> AreaInfo(1, "新"),   "A44" -> AreaInfo(1, "新"), 
     "A48" -> AreaInfo(1, "新"),  "A52" -> AreaInfo(1, "新"),   "A53" -> AreaInfo(1, "新"), 
     "A56" -> AreaInfo(1, "新"),  "A54" -> AreaInfo(1, "新"),   "A42" -> AreaInfo(1, "新"), 
-    "A47" -> AreaInfo(1, "新"),  "A38" -> AreaInfo(1, "新"),   "A58" -> AreaInfo(1, "新")
+    "A47" -> AreaInfo(1, "新"),  "A38" -> AreaInfo(1, "新"),   "A58" -> AreaInfo(1, "新"),
+    "G06" -> AreaInfo(2, "3"),   "G24" -> AreaInfo(2, "新"),   "E70" -> AreaInfo(2, "新")
   )
   /**
    *  機台編號到機台型號的對照表
@@ -1138,4 +1141,8 @@ object MachineInfo {
    *  @return               機台的製程名稱
    */
   def getMachineType(machineID: String) = machineTypeName.get(getMachineTypeID(machineID)).getOrElse("Unknown")
+
+  def getMachineFloor(machineID: String): Int = areaMapping.get(machineID).map(_.floor).getOrElse(-1)
+  def getMachineArea(machineID: String): String = areaMapping.get(machineID).map(_.area).getOrElse("Unknown")
+
 }

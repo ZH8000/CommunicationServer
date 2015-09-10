@@ -69,6 +69,9 @@ case class Record(
    */
   def partNo = if (!isFromBarcode) "none" else rawPartNo
 
+  def area: String = MachineInfo.getMachineArea(this.machID)
+  def floor: Int = MachineInfo.getMachineFloor(this.machID)
+
   /**
    *  取得早班或晚班
    *

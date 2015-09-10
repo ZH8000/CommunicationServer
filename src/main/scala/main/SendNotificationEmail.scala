@@ -31,7 +31,7 @@ object SendNotificationEmail {
    *  @param    password  密碼
    *  @param    body      信件內容
    */
-  def sendmail(username: String, password: String, body: String) {
+  def sendmail(username: String, password: String, title: String, body: String) {
     val props = new Properties
     props.put("mail.smtp.auth", "true");
     props.put("mail.smtp.host", "mail.zhenhai.com.tw");
@@ -47,7 +47,7 @@ object SendNotificationEmail {
 
     message.setFrom(new InternetAddress(username))
     message.setRecipients(Message.RecipientType.TO, receivers)
-    message.setSubject("今日維修零件清單")
+    message.setSubject(title)
     message.setText(body)
     Transport.send(message);
     logger.info("DONE")
@@ -148,7 +148,7 @@ object SendNotificationEmail {
       val password = args(1).trim
 
       logger.info("notices:" + alarmNotices)
-      sendmail(username, password, alarmNotices)
+      sendmail(username, password, "今日維修零件清單", alarmNotices)
     }
   }
 }
