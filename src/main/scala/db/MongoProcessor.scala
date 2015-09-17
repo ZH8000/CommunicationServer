@@ -711,10 +711,11 @@ class MongoProcessor(mongoClient: MongoClient) {
       "product" -> record.fullProductCode
     )
 
-    val operation = $inc("countQty" -> record.countQty)
-
-    zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
-    zhenhaiDB(tableName).update(query, operation, upsert = true)
+    if (record.countQty > 0) {
+      val operation = $inc("countQty" -> record.countQty)
+      zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
+      zhenhaiDB(tableName).update(query, operation, upsert = true)
+    }
 
     val defactOperation = record.defactID match {
       case 0    => Some($inc("short" -> record.eventQty))
@@ -751,10 +752,11 @@ class MongoProcessor(mongoClient: MongoClient) {
       "product" -> record.fullProductCode
     )
 
-    val operation = $inc("countQty" -> record.countQty)
-
-    zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
-    zhenhaiDB(tableName).update(query, operation, upsert = true)
+    if (record.countQty > 0) {
+      val operation = $inc("countQty" -> record.countQty)
+      zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
+      zhenhaiDB(tableName).update(query, operation, upsert = true)
+    }
 
     val defactOperation = record.defactID match {
       case 104  => Some($inc("defactD" -> record.eventQty))
@@ -766,7 +768,7 @@ class MongoProcessor(mongoClient: MongoClient) {
     defactOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
 
     val eventOperation = record.otherEventID match {
-      case 103  => Some($inc("total" -> record.eventQty))
+      case 102  => Some($inc("total" -> record.eventQty))
       case 105  => Some($inc("rubber" -> record.eventQty))
       case 106  => Some($inc("shell" -> record.eventQty))
       case _ => None
@@ -790,10 +792,12 @@ class MongoProcessor(mongoClient: MongoClient) {
       "product" -> record.fullProductCode
     )
 
-    val operation = $inc("countQty" -> record.countQty)
+    if (record.countQty > 0) {
+      val operation = $inc("countQty" -> record.countQty)
+      zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
+      zhenhaiDB(tableName).update(query, operation, upsert = true)
+    }
 
-    zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
-    zhenhaiDB(tableName).update(query, operation, upsert = true)
 
     val defactOperation = record.defactID match {
       case 202  => Some($inc("short" -> record.eventQty))
@@ -831,10 +835,11 @@ class MongoProcessor(mongoClient: MongoClient) {
       "product" -> record.fullProductCode
     )
 
-    val operation = $inc("countQty" -> record.countQty)
-
-    zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
-    zhenhaiDB(tableName).update(query, operation, upsert = true)
+    if (record.countQty > 0) {
+      val operation = $inc("countQty" -> record.countQty)
+      zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
+      zhenhaiDB(tableName).update(query, operation, upsert = true)
+    }
 
     val eventOperation = record.otherEventID match {
       case 0  => Some($inc("total" -> record.eventQty))

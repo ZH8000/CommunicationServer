@@ -85,7 +85,7 @@ class DeQueueServerDaemon extends Daemon {
        )
 
        // 一次最多從佇列中取出十個還沒處理的訊息
-       channel.basicQos(10)
+       channel.basicQos(20)
   
        val consumer = new QueueingConsumer(channel)
        channel.basicConsume(QueueName, false, consumer)
