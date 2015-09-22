@@ -384,6 +384,20 @@ class MongoProcessor(mongoClient: MongoClient) {
         "currentTimestamp" -> record.embDate
       )
     )
+
+    val query = MongoDBObject(
+      "machineID" -> record.machID,
+      "lotNo" -> record.lotNo,
+      "partNo" -> record.partNo,
+      "productCode"   -> record.fullProductCode,
+      "shiftDate"     -> record.shiftDate,
+      "workerID" -> record.workID,
+      "machineType" -> record.machineType,
+      "order" -> (lastIndex + 1)
+    )
+
+    operationTime.ensureIndex(query.mapValues(x => 1))
+
   }
 
   /**
@@ -395,19 +409,26 @@ class MongoProcessor(mongoClient: MongoClient) {
     val month = record.shiftDate.substring(0, 7)
     val operationTime = zhenhaiDB(s"operationTime-$month")
     val lastIndex = getLastOperationTimeIndex(record)
-    val query = MongoDBObject(
-      "machineID" -> record.machID,
-      "lotNo" -> record.lotNo,
-      "partNo" -> record.partNo,
-      "productCode"   -> record.fullProductCode,
-      "shiftDate"     -> record.shiftDate,
-      "workerID" -> record.workID,
-      "machineType" -> record.machineType,
-      "order" -> lastIndex
-    )
 
-    operationTime.update(query, $set("currentTimestamp" -> record.embDate))
-    operationTime.update(query, $inc("countQty" -> record.countQty))
+    if (lastIndex == 0) {
+      incrementOperationTimeIndex(record)
+    } else {
+
+      val query = MongoDBObject(
+        "machineID" -> record.machID,
+        "lotNo" -> record.lotNo,
+        "partNo" -> record.partNo,
+        "productCode"   -> record.fullProductCode,
+        "shiftDate"     -> record.shiftDate,
+        "workerID" -> record.workID,
+        "machineType" -> record.machineType,
+        "order" -> lastIndex
+      )
+
+      operationTime.ensureIndex(query.mapValues(x => 1))
+      operationTime.update(query, $set("currentTimestamp" -> record.embDate))
+      operationTime.update(query, $inc("countQty" -> record.countQty))
+    }
   }
 
   /**
@@ -768,7 +789,7 @@ class MongoProcessor(mongoClient: MongoClient) {
     defactOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
 
     val eventOperation = record.otherEventID match {
-      case 102  => Some($inc("total" -> record.eventQty))
+      case 103  => Some($inc("total" -> record.eventQty))
       case 105  => Some($inc("rubber" -> record.eventQty))
       case 106  => Some($inc("shell" -> record.eventQty))
       case _ => None
