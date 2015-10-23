@@ -9,6 +9,58 @@ import java.util.Date
 import java.util.Calendar
 import org.slf4j.LoggerFactory
 
+object MachineStatusCode {
+  /**
+   *  機台狀態 01 = 生產中
+   */
+  val RUNNING = "01"
+
+  /**
+   *  機台狀態 02 = 進維修
+   */
+  val ENTER_MAINTAIN = "02"
+
+  /**
+   *  機台狀態 03 = 出維修
+   */
+  val EXIT_MAINTAIN = "03"
+
+  /**
+   *  機台狀態 04 = 生產完成
+   */
+  val PRODUCE_DONE = "04"
+
+  /**
+   *  機台狀態 05 = 機台鎖機（閒置過久）
+   */
+  val ENTER_LOCK = "05"
+
+  /**
+   *  機台狀態 06 = 機台解鎖
+   */
+  val EXIT_LOCK = "05"
+
+  /**
+   *  機台狀態 07 = 按下結單鈕強制結單，且良品數有到達目標值
+   */
+  val FORCE_CLOSE_FULFILL = "07"
+
+  /**
+   *  機台狀態 08 = 按下結單鈕強制結單，且良品數有到達目標值
+   */
+  val FORCE_CLOSE_NOT_FULFILL = "08"
+
+  /**
+   *  機台狀態 09 = 掃條碼
+   */
+  val SCAN_BARCODE = "09"
+
+  /**
+   *  機台狀態 10 = 機台 STANDBY，準備接受條碼輸入
+   */
+  val SCAN_STANDBY = "10"
+}
+
 /**
  *  此類別負責將從 RaspberryPi 送過來，已經轉換成 Scala 物件的資料，經過統計分析
  *  之後，分別存入不同的 MongoDB 資料表，以方便前台網站顯示時，不需要經過即時運算
@@ -19,12 +71,7 @@ import org.slf4j.LoggerFactory
  */
 class MongoProcessor(mongoClient: MongoClient) {
 
-  private val ENTER_MAINTAIN = "02"
-  private val EXIT_MAINTAIN = "03"
-  private val PRODUCE_DONE = "04"
-  private val ENTER_LOCK = "05"
-  private val FORCE_CLOSE_FULFILL = "07"
-  private val SCAN_BARCODE = "09"
+  import MachineStatusCode._
 
   val zhenhaiDB = mongoClient("zhenhai")
   val zhenhaiDailyDB = mongoClient("zhenhaiDaily")
@@ -143,6 +190,11 @@ class MongoProcessor(mongoClient: MongoClient) {
     zhenhaiDB("productionStatus").ensureIndex(query.mapValues(x => 1))
   }
 
+  /**
+   *  新增資料至網頁上「今日工單」的歷史資料資料表
+   *
+   *  @param    record    目前處理的資料物件
+   */
   def updateProductionHistoryStatus(record: Record) {
     val query = MongoDBObject(
       "partNo" -> record.partNo,
@@ -716,6 +768,11 @@ class MongoProcessor(mongoClient: MongoClient) {
     zhenhaiDB(tableName).update(query, operation, upsert = true)
   }
 
+  /**
+   *  更新「生產狀況」統計表中「卷取機」的資料表
+   *
+   *  @param  record  要處理的資料
+   */
   def updateDefactSummaryStep1(record: Record) {
 
     val month = record.shiftDate.substring(0, 7)
@@ -758,6 +815,11 @@ class MongoProcessor(mongoClient: MongoClient) {
     eventOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
   }
 
+  /**
+   *  更新「生產狀況」統計表中「組立機」的資料表
+   *
+   *  @param  record  要處理的資料
+   */
   def updateDefactSummaryStep2(record: Record) {
     val month = record.shiftDate.substring(0, 7)
     val tableName = s"defactSummary-$month"
@@ -798,6 +860,11 @@ class MongoProcessor(mongoClient: MongoClient) {
     eventOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
   }
 
+  /**
+   *  更新「生產狀況」統計表中「老化機」的資料表
+   *
+   *  @param  record  要處理的資料
+   */
   def updateDefactSummaryStep3(record: Record) {
     val month = record.shiftDate.substring(0, 7)
     val tableName = s"defactSummary-$month"
@@ -841,6 +908,11 @@ class MongoProcessor(mongoClient: MongoClient) {
     eventOperation.foreach(o => zhenhaiDB(tableName).update(query, o, upsert = true))
   }
 
+  /**
+   *  更新「生產狀況」統計表中「TAPPING 機/ CUT 機」的資料表
+   *
+   *  @param  record  要處理的資料
+   */
   def updateDefactSummaryStep5(record: Record) {
     val month = record.shiftDate.substring(0, 7)
     val tableName = s"defactSummary-$month"
@@ -871,6 +943,11 @@ class MongoProcessor(mongoClient: MongoClient) {
   }
 
 
+  /**
+   *  依照傳入的資料來決定要更新「生產狀況」中的哪個資料表
+   *
+   *  @param  record    要處理的資料
+   */
   def updateDefactSummary(record: Record) {
     record.machineType match {
       case 1 => updateDefactSummaryStep1(record)
