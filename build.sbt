@@ -1,7 +1,3 @@
-import AssemblyKeys._ // put this at the top of the file
-
-assemblySettings
-
 name := "CommunicationServer"
 
 version := "0.0.4"
