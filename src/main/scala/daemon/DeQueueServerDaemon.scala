@@ -24,7 +24,6 @@ import tw.com.zhenhai.util.KeepRetry
 
 import scala.util._
 import scala.concurrent._
-import ExecutionContext.Implicits.global
 
 /**
  *  將 RabbitMQ 中的資料拿出來處理的 Daemon
@@ -85,7 +84,7 @@ class DeQueueServerDaemon extends Daemon {
        )
 
        // 一次最多從佇列中取出十個還沒處理的訊息
-       channel.basicQos(20)
+       channel.basicQos(10)
   
        val consumer = new QueueingConsumer(channel)
        channel.basicConsume(QueueName, false, consumer)
@@ -130,6 +129,8 @@ class DeQueueServerDaemon extends Daemon {
      *  主程式：不斷從佇列中取出其內容，並且分析處理過後存入 MongoDB
      */
     override def run() {
+
+      implicit val ec = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(12))
   
       // 若發生 Exception，則不斷等待 60 秒後重試
       KeepRetry(60) {

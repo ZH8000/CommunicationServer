@@ -58,7 +58,17 @@ object MachineStatusCode {
   /**
    *  機台狀態 10 = 機台 STANDBY，準備接受條碼輸入
    */
-  val SCAN_STANDBY = "10"
+  val STANDBY = "10"
+
+  /**
+   *  機台斷電
+   */
+  val POWER_OFF = "11"
+
+  /**
+   *  機台開機完成，已撈完資料
+   */
+  val BOOT_COMPLETE  = "12"
 }
 
 /**
@@ -477,9 +487,17 @@ class MongoProcessor(mongoClient: MongoClient) {
         "order" -> lastIndex
       )
 
+      val oldTimestampHolder = for {
+        oldRecord <- operationTime.findOne(query)
+        timestamp <- Option(oldRecord.get("currentTimestamp")).map(_.toString.toLong)
+      } yield timestamp
+
       operationTime.ensureIndex(query.mapValues(x => 1))
-      operationTime.update(query, $set("currentTimestamp" -> record.embDate))
       operationTime.update(query, $inc("countQty" -> record.countQty))
+      
+      if (oldTimestampHolder.isEmpty || oldTimestampHolder.getOrElse(0L) < record.embDate) {
+        operationTime.update(query, $set("currentTimestamp" -> record.embDate))
+      }
     }
   }
 
@@ -700,14 +718,34 @@ class MongoProcessor(mongoClient: MongoClient) {
    *  @param    record      要處理的資料
    */
   def updateMachineStatus(record: Record) {
-    zhenhaiDB("machineStatus").update(
-      MongoDBObject("machineID" -> record.machID), 
-      $set(
-        "status" -> record.machineStatus,
-        "lastUpdateTime" -> record.embDate
-      ), 
-      upsert = true
-    )
+
+    val machineStatusTable = zhenhaiDB("machineStatus")
+    val query = MongoDBObject("machineID" -> record.machID) 
+    val existRecordHolder = machineStatusTable.findOne(query)
+    def shouldUpdate(oldRecord: MongoDBObject): Boolean = {
+      oldRecord.get("lastUpdateTime").map(_.toString.toLong < record.embDate).getOrElse(false)
+    }
+
+    existRecordHolder match {
+      case None => 
+        machineStatusTable.insert(
+          MongoDBObject("machineID" -> record.machID, "status" -> record.machineStatus, "lastUpdateTime" -> record.embDate)
+        )
+      case Some(oldRecord) if shouldUpdate(oldRecord) =>
+        machineStatusTable.update(
+          MongoDBObject("machineID" -> record.machID), 
+          $set(
+            "status" -> record.machineStatus,
+            "lastUpdateTime" -> record.embDate
+          ), 
+          upsert = true
+        )
+      case _ =>
+
+    }
+
+    machineStatusTable.ensureIndex(query.mapValues(x => 1))
+
   }
 
   /*
@@ -959,6 +997,46 @@ class MongoProcessor(mongoClient: MongoClient) {
   }
 
   /**
+   *  更新「工單良品總數」資料表
+   *
+   *  當 Pi 的盒子斷電的時候，會傳送 POWER_OFF
+   *
+   *  @param    record    要處理的資料
+   */
+  def updateTotalCountOfOrders(record: Record) {
+    val tableName = s"totalCountOfOrders"
+    val totalCountTable = zhenhaiDB(tableName)
+
+    val query = MongoDBObject(
+      "lotNo"     -> record.lotNo,
+      "partNo"    -> record.partNo,
+      "machineID" -> record.machID
+    )
+
+    totalCountTable.ensureIndex(query.mapValues(x => 1))
+
+    val oldTimestampHolder = for {
+      oldRecord <- totalCountTable.findOne(query)
+      timestamp <- Option(oldRecord.get("currentTimestamp")).map(_.toString.toLong)
+    } yield timestamp
+
+    val operation1 = $inc("totalCount" -> record.countQty)
+    val operation2 = $set("workQty" -> record.workQty)
+
+    totalCountTable.update(query, operation1, upsert = true)
+    totalCountTable.update(query, operation2)
+
+    if (oldTimestampHolder.isEmpty || oldTimestampHolder.getOrElse(0L) < record.embDate) {
+      val operation3 = $set("status" -> record.machineStatus)
+
+      totalCountTable.update(query, $set("currentTimestamp" -> record.embDate))
+      totalCountTable.update(query, operation3)
+    }
+
+  }
+
+
+  /**
    *  將 RaspberryPi 送過來的資料處理分析
    *
    *  @param     要處理的資料
@@ -979,9 +1057,11 @@ class MongoProcessor(mongoClient: MongoClient) {
       zhenhaiDB("strangeQty").insert(record.toMongoObject)
     }
 
-    val isRealData = record.partNo != "0" && record.lotNo != "0"
+    val isRealData = 
+      record.partNo != "0" && record.lotNo != "0" && 
+      record.machineStatus != POWER_OFF && record.machineStatus != BOOT_COMPLETE
 
-    if (record.partNo != "0" && record.lotNo != "0") {
+    if (isRealData) {
       updateWorkQty(record)
       updateDefactSummary(record)
 
@@ -1033,5 +1113,6 @@ class MongoProcessor(mongoClient: MongoClient) {
       }
     }
 
+    updateTotalCountOfOrders(record)
   }
 }
