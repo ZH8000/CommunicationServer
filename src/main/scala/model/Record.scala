@@ -5,6 +5,7 @@ import java.util.Calendar
 import java.text.SimpleDateFormat
 import com.mongodb.casbah.Imports._
 import scala.util.Try
+import org.slf4j.LoggerFactory
 
 /**
  *  用來表示傳 RaspberryPi 傳回來的記錄資料的物件
@@ -208,6 +209,8 @@ case class Record(
  */
 object Record {
 
+  implicit val logger = LoggerFactory.getLogger("DeQueueServer")
+
   /**
    *  將原始的時間戳記轉換成工班日期（減七個小時）
    *
@@ -217,6 +220,41 @@ object Record {
   def getShiftTime(timestamp: Long) = {
     val offsetOf7Hours = 7 * 60 * 60 * 1000
     new Date((timestamp * 1000) - offsetOf7Hours)    
+  }
+
+  def processLineWithBug(line: String) = Try {
+
+    /*
+    val columns = line.split(" ")
+    val processedLineHolder = Try { (Array(columns(0)) ++ Array(columns(1).trim + columns(2).trim) ++ columns.drop(3)).mkString(" ") }
+    processedLineHolder.flatMap(x => Record(x))
+    */
+    logger.info(s"[BUG LINE] $line")
+    val columns = line.split(" ");
+    val machineID = columns(9)
+    val timestamp = columns(5).toLong
+    val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
+    new Record(
+      columns(0), 
+      columns(1) + " " + columns(2), 
+      columns(3).toLong, 
+      columns(4).toLong,
+      columns(5).toLong,
+      columns(6).toLong, 
+      columns(7),
+      columns(8).toLong,
+      machineID,
+      columns(10).toLowerCase,
+      columns(11),
+      columns(12),
+      columns(13),
+      columns(14).trim,
+      dateFormatter.format(new Date(timestamp * 1000)),
+      Try{columns(15)}.getOrElse(""),
+      dateFormatter.format(getShiftTime(timestamp)),
+      line
+    )
+
   }
 
   /**

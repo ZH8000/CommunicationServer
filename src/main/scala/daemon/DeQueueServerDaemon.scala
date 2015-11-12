@@ -157,17 +157,21 @@ class DeQueueServerDaemon extends Daemon {
     class OrderedDBThread(dbProcessor: OrderedDBProcessor, channel: Channel, consumer: QueueingConsumer) extends Thread {
 
       override def run() {
+        logger.info(s"Start orderedDBThread of ${dbProcessor.getClass}")
         while (!shouldStopped) {
           val delivery = consumer.nextDelivery()
           val message = new String(delivery.getBody())
+          val messageHolder = Record(message) orElse Record.processLineWithBug(message)
 
-          Record(message).foreach { record =>
-            try {
-              dbProcessor.updateDB(record)
-              channel.basicAck(delivery.getEnvelope.getDeliveryTag, false)
-            } catch {
-              case e: Exception => logger.error("Cannot insert to ordered mongoDB", e)
-            }
+          messageHolder match {
+            case Failure(e) => logger.error(s"Cannot process rawData record $message", e)
+            case Success(record) =>
+              try {
+                dbProcessor.updateDB(record)
+                channel.basicAck(delivery.getEnvelope.getDeliveryTag, false)
+              } catch {
+                case e: Exception => logger.error("Cannot insert to ordered mongoDB", e)
+              }
           }
         }
       }
@@ -194,31 +198,40 @@ class DeQueueServerDaemon extends Daemon {
    
         logger.info(" [*] DeQueue Server Started.")
 
+        logger.info(" [*] Try to start thread...")
         val updateOperationTimeThread = new OrderedDBThread(new UpdateOperationTime, operationTimeChannel, operationTimeConsumer)
         val updateProductionStatusThread = new OrderedDBThread(new UpdateProductionStatus, productionStatusChannel, productionStatusConsumer)
 
+        logger.info(" [*] Try to stat updateOperationTimeThread...")
+
         updateOperationTimeThread.start()
+
+        logger.info(" [*] Try to stat updateProductionStatusThread...")
         updateProductionStatusThread.start()
 
         while (!shouldStopped) {
           val delivery = consumer.nextDelivery()
           val message = new String(delivery.getBody())
 
-          Record(message).foreach { record =>
+          val messageHolder = Record(message) orElse Record.processLineWithBug(message)
 
-            productionStatusChannel.basicPublish("", ProductionStatusQueue, null, message.getBytes());
-            operationTimeChannel.basicPublish("", OperationTimeQueue, null, message.getBytes());
+          messageHolder match {
+            case Failure(e) => logger.info(s"Cannot process rawData record $message", e)
+            case Success(record) =>
 
-            val dequeueWork = Future {
-              val mongoProcessor = new MongoProcessor(mongoClient)
-              processRecord(mongoProcessor, record)
-              //通知 RabbitMQ 我們已成功處理此筆資料
-              channel.basicAck(delivery.getEnvelope.getDeliveryTag, false)
-            }
+              productionStatusChannel.basicPublish("", ProductionStatusQueue, null, message.getBytes());
+              operationTimeChannel.basicPublish("", OperationTimeQueue, null, message.getBytes());
+
+              val dequeueWork = Future {
+                val mongoProcessor = new MongoProcessor(mongoClient)
+                processRecord(mongoProcessor, record)
+                //通知 RabbitMQ 我們已成功處理此筆資料
+                channel.basicAck(delivery.getEnvelope.getDeliveryTag, false)
+              }
   
-            dequeueWork.onFailure { 
-              case e: Exception => logger.error("Cannot insert to mongoDB", e)
-            }
+              dequeueWork.onFailure { 
+                case e: Exception => logger.error("Cannot insert to mongoDB", e)
+              }
           }
         }
 
