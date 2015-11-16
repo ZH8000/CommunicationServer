@@ -192,7 +192,7 @@ class MongoProcessor(mongoClient: MongoClient) {
         )
       )
     }
-
+    zhenhaiDB("lotDate").ensureIndex(MongoDBObject("lotNo" -> 1))
   }
 
 
