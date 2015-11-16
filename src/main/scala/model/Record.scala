@@ -279,7 +279,7 @@ object Record {
       columns(6),
       columns(7).toLong,
       machineID,
-      columns(9).toLowerCase,
+      columns(9).toLowerCase.take(24),
       columns(10),
       columns(11),
       columns(12),
