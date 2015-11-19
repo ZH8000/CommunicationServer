@@ -21,7 +21,7 @@ import com.mongodb.casbah.Imports._
  */
 object SendNotificationEmail {
 
-  val receiverList = ("z_h_e_n_h_a_i@mailinator.com " :: getReceivers).mkString("; ")
+  val receiverList = ("z_h_e_n_h_a_i@mailinator.com" :: getReceivers).mkString(",")
   val logger = LoggerFactory.getLogger("SendNotificationEmail")
 
   /**
