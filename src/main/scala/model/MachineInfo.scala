@@ -20,6 +20,7 @@ object MachineInfo {
     val hostname = InetAddress.getLocalHost().getHostName()
 
     hostname match {
+      case "ZhenhaiServerSZ" => "/sz"
       case _ => "/xg"
     }
   }
