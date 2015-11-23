@@ -2,6 +2,7 @@ package tw.com.zhenhai.db
 
 import com.mongodb.casbah.Imports._
 import tw.com.zhenhai.model._
+import org.slf4j.LoggerFactory
 
 class UpdateOperationTime extends OrderedDBProcessor {
   
@@ -38,7 +39,12 @@ class UpdateOperationTime extends OrderedDBProcessor {
   /**
    *  更新「工單良品總數」資料表
    *
-   *  當 Pi 的盒子斷電的時候，會傳送 POWER_OFF
+   *  當 Pi 的盒子斷電的時候，會傳送 POWER_OFF 訊號，以告知 Server 有不正常斷電之
+   *  情況。當 Pi 盒子開機時，會向 Server 索取資料，而 Server 會把該機台上狀最後
+   *  一筆資料的狀態為 POWER_OFF 的訂單良品累計總數與目標量回傳。
+   *
+   *  此函式會更新 totalCounOfOrders 資料表，並記錄各筆訂單目前累計的良品總數，以
+   *  及該筆訂單最後的狀態，以供 RaspberryPi 開機時查詢之用。
    *
    *  @param    record    要處理的資料
    */
@@ -57,10 +63,12 @@ class UpdateOperationTime extends OrderedDBProcessor {
     val operation1 = $inc("totalCount" -> record.countQty)
     val operation2 = $set("workQty" -> record.workQty)
     val operation3 = $set("status" -> record.machineStatus)
+    val operation4 = $set("lastUpdatedTime" -> record.embDate)
 
     totalCountTable.update(query, operation1, upsert = true)
     totalCountTable.update(query, operation2)
     totalCountTable.update(query, operation3)
+    totalCountTable.update(query, operation4)
   }
 
   /**
