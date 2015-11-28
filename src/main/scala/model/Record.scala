@@ -3,6 +3,7 @@ package tw.com.zhenhai.model
 import java.util.Date
 import java.util.Calendar
 import java.text.SimpleDateFormat
+import java.net.InetAddress
 import com.mongodb.casbah.Imports._
 import scala.util.Try
 import org.slf4j.LoggerFactory
@@ -82,8 +83,15 @@ case class Record(
     val calendar = Calendar.getInstance
     calendar.setTime(new Date(embDate * 1000))
     val hour = calendar.get(Calendar.HOUR_OF_DAY)
+    val minute = calendar.get(Calendar.MINUTE)
+    val hostname = InetAddress.getLocalHost().getHostName()
 
-    if (hour >= 7 && hour < 19) "M" else "N"
+    val isDailyShift = hostname match {
+      case "ZhenhaiServerSZ" => (hour >= 7 && minute >= 30) && (hour <= 19 && minute < 30)
+      case _ => (hour >= 7 && hour < 19)
+    }
+
+    if (isDailyShift) "M" else "N"
   }
 
   /**
@@ -212,23 +220,49 @@ object Record {
   implicit val logger = LoggerFactory.getLogger("DeQueueServer")
 
   /**
-   *  將原始的時間戳記轉換成工班日期（減七個小時）
+   *  將原始的時間戳記依照謝崗廠的換幫時間轉換成工班日期（減七個小時）
+   *
+   *  @param    timestamp   時間戳記
+   *  @return               工班日期的時間戳記
+   */
+  def getShiftTimeOfXG(timestamp: Long) = {
+    val offsetOf7Hours = 7 * 60 * 60 * 1000
+    new Date((timestamp * 1000) - offsetOf7Hours)    
+  }
+
+  /**
+   *  將原始的時間戳記依照蘇州廠的換幫時間轉換成工班日期（減七個半小時）
+   *
+   *  @param    timestamp   時間戳記
+   *  @return               工班日期的時間戳記
+   */
+  def getShiftTimeOfSZ(timestamp: Long) = {
+    val offsetOf7Hours = (7 * 60 * 60 * 1000) + (30 * 60 * 1000)
+    new Date((timestamp * 1000) - offsetOf7Hours)
+  }
+
+
+  /**
+   *  將原始的時間戳記轉換成工班日期
+   *
+   *  謝崗廠：減七個小時（早上七點上班，上到晚上六點五十九）
+   *  蘇州廠：減七個半小時（早上七點半上班，上到晚上七點二十九）
    *
    *  @param    timestamp   時間戳記
    *  @return               工班日期的時間戳記
    */
   def getShiftTime(timestamp: Long) = {
-    val offsetOf7Hours = 7 * 60 * 60 * 1000
-    new Date((timestamp * 1000) - offsetOf7Hours)    
+    val hostname = InetAddress.getLocalHost().getHostName()
+
+    hostname match {
+      case "ZhenhaiServerSZ" => getShiftTimeOfSZ(timestamp)
+      case _ => getShiftTimeOfXG(timestamp)
+    }
   }
+
 
   def processLineWithBug(line: String) = Try {
 
-    /*
-    val columns = line.split(" ")
-    val processedLineHolder = Try { (Array(columns(0)) ++ Array(columns(1).trim + columns(2).trim) ++ columns.drop(3)).mkString(" ") }
-    processedLineHolder.flatMap(x => Record(x))
-    */
     logger.info(s"[BUG LINE] $line")
     val columns = line.split(" ");
     val machineID = columns(9)
