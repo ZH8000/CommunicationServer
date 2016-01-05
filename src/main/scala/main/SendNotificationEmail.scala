@@ -113,13 +113,15 @@ object SendNotificationEmail {
 
     val alarmNotices = alarms.filter(isUrgent).map { alarm =>
       val machineID = alarm.getAs[String]("machineID").getOrElse("")
+      val lastUpdatedCount = alarm.getAs[Long]("lastReplaceCount").getOrElse(0L)
       val currentMachineCounter =
         machineCounterColl.findOne(MongoDBObject("machineID" -> machineID))
                           .map(row => row("counter").toString.toLong)
                           .getOrElse(0L)
+      val producedAfterLastReplace = currentMachineCounter - lastUpdatedCount
       val countdownQty = alarm.getAs[Long]("countdownQty").getOrElse(0L)
       val description = alarm.getAs[String]("description").getOrElse("")
-      s"[$machineID]  $description ($currentMachineCounter / $countdownQty)"
+      s"[$machineID]  $description ($producedAfterLastReplace / $countdownQty)"
     }
 
     alarmNotices.isEmpty match {
@@ -127,12 +129,12 @@ object SendNotificationEmail {
       case false =>
         Some(
           """
-          | 以下為今日需要進行定期零件更換的機台：
+          |以下為今日需要進行定期零件更換的機台：
           |
           |
-          |  [機台編號]  描述  (目前良品數 / 目標良品數)
+          |[機台編號]  描述  (自從上次更換後做了多少良品數 / 每做多少個良品數要更換)
           |
-          |  %s
+          |%s
           """.stripMargin.format(alarmNotices.mkString("\n"))
         )
     }
