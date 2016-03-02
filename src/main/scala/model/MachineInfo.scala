@@ -563,10 +563,14 @@ object MachineInfo {
    */
   val productMapping: Map[String, String] = {
     var mapping: Map[String, String] = Map.empty
-    val resourceStream = getClass.getResource(csvPrefix + "ProductMapping.csv").openStream()
+    val resourceStream = classOf[MachineInfo].getResourceAsStream(csvPrefix + "ProductMapping.csv")
     val csvFile = Source.fromInputStream(resourceStream)
 
+    println("productMapping.stream:" + resourceStream)
+    println("productMapping.csv:" + csvFile)
+
     csvFile.getLines.foreach { line =>
+      println(line)
       val Array(machineID, productSize) = line.split("\\|")
       mapping += (machineID -> productSize)
     }
@@ -589,12 +593,16 @@ object MachineInfo {
   /**
    *  機台列表，列出現存的所有機台
    */
-  lazy val machineList: List[MachineInfo] = {
+  val machineList: List[MachineInfo] = {
 
-    val resourceStream = getClass.getResource(csvPrefix + "MachineList.csv").openStream()
+    val resourceStream = classOf[MachineInfo].getResourceAsStream(csvPrefix + "MachineList.csv")
     val csvFile = Source.fromInputStream(resourceStream)
 
+    println("machineList.stream:" + resourceStream)
+    println("machineList.csv:" + csvFile)
+
     csvFile.getLines.toList.map { line =>
+      println(line)
       val cols = line.split("\\|")
       val ip = cols(0)
       val machineID = cols(1)
@@ -611,10 +619,12 @@ object MachineInfo {
    */
   val areaMapping: Map[String, AreaInfo] = {
     var mapping: Map[String, AreaInfo] = Map.empty
-    val resourceStream = getClass.getResource(csvPrefix + "AreaInfo.csv").openStream()
+    val resourceStream = classOf[MachineInfo].getResourceAsStream(csvPrefix + "AreaInfo.csv")
     val csvFile = Source.fromInputStream(resourceStream)
+    println("areaMapping.csv:" + csvFile)
 
     csvFile.getLines.foreach { line =>
+      println(line)
       val Array(machineID, floor, area) = line.split("\\|")
       mapping += (machineID -> AreaInfo(floor.toInt, area))
     }
@@ -682,5 +692,19 @@ object MachineInfo {
    *  @return               機台所在區域
    */
   def getMachineArea(machineID: String): String = areaMapping.get(machineID).map(_.area).getOrElse("Unknown")
+
+  println("====== Area Mapping =========")
+  println(areaMapping)
+  println("=============================")
+
+  println("====== Machine List =========")
+  println(machineList)
+  println("=============================")
+
+  println("====== Product Mapping ======")
+  println(productMapping)
+  println("=============================")
+
+
 
 }
