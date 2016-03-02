@@ -36,6 +36,20 @@ class UpdateOperationTime extends OrderedDBProcessor {
 
   }
 
+  def updateDailyLotNoPartNo(record: Record) {
+    val dailyLotNoPartNo = zhenhaiDB("dailyLotNoPartNo")
+    val query = MongoDBObject(
+      "machineID" -> record.machID,
+      "lotNo"     -> record.lotNo,
+      "partNo"    -> record.partNo,
+      "shiftDate" -> record.shiftDate
+    )
+
+    dailyLotNoPartNo.ensureIndex(query.mapValues(x => 1))
+    dailyLotNoPartNo.update(query, $set("lastUpdated" -> record.embDate), upsert = true)
+    dailyLotNoPartNo.update(query, $set("lastStatus" -> record.machineStatus), upsert = true)
+  }
+
   /**
    *  更新「工單良品總數」資料表
    *
@@ -205,6 +219,7 @@ class UpdateOperationTime extends OrderedDBProcessor {
 
       if (record.isFromBarcode) {
         updateOperationTime(record)
+        updateDailyLotNoPartNo(record)
       }
     }
 
