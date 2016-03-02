@@ -82,16 +82,18 @@ case class Record(
    *  @return   若早班則為 M，晚班則為 N
    */
   def shift = {
+    val hostname = InetAddress.getLocalHost().getHostName()
     val calendar = Calendar.getInstance
-    calendar.setTime(new Date(embDate * 1000))
+
+    // 蘇州廠從 7:30 - 19:30 開始算一班，為了方便判斷，減去三十分鐘，則早晚班判斷方式可以和謝崗廠一樣
+    val timestamp = hostname match {
+      case "ZhenhaiServerSZ" => new Date(embDate * 1000 - 1000 * 60 * 30) 
+      case _                 => new Date(embDate * 1000)
+    }
+    calendar.setTime(timestamp)
     val hour = calendar.get(Calendar.HOUR_OF_DAY)
     val minute = calendar.get(Calendar.MINUTE)
-    val hostname = InetAddress.getLocalHost().getHostName()
-
-    val isDailyShift = hostname match {
-      case "ZhenhaiServerSZ" => (hour >= 7 && minute >= 30) && (hour <= 19 && minute < 30)
-      case _ => (hour >= 7 && hour < 19)
-    }
+    val isDailyShift = (hour >= 7 && hour < 19)
 
     if (isDailyShift) "M" else "N"
   }
