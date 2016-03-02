@@ -21,6 +21,7 @@ import tw.com.zhenhai._
 import tw.com.zhenhai.db._
 import tw.com.zhenhai.model.Record
 import tw.com.zhenhai.util.KeepRetry
+import tw.com.zhenhai.model.MachineInfo
 
 import scala.util._
 import scala.concurrent._
@@ -244,6 +245,7 @@ class DeQueueServerDaemon extends Daemon {
      *  主程式：不斷從佇列中取出其內容，並且分析處理過後存入 MongoDB
      */
     override def run() {
+      println(MachineInfo.areaMapping)
 
       implicit val ec = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(12))
   
@@ -281,7 +283,11 @@ class DeQueueServerDaemon extends Daemon {
           val messageHolder = Record(message) orElse Record.processLineWithBug(message)
 
           messageHolder match {
-            case Failure(e) => logger.info(s"Cannot process rawData record $message", e)
+            case Failure(e) => 
+              logger.info(s"Cannot process rawData record $message", e)
+              logger.error(s"[BUG2] $message")
+              channel.basicAck(delivery.getEnvelope.getDeliveryTag, false)
+
             case Success(record) =>
 
               productionStatusChannel.basicPublish("", ProductionStatusQueue, null, message.getBytes());

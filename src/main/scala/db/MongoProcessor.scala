@@ -378,7 +378,8 @@ class MongoProcessor(mongoClient: MongoClient) {
   /**
    *  更新不良事件統計資料
    *
-   *  這個兩個資料表用來顯示「本日前五大錯誤」和「錯誤分析」中的圓餅圖
+   *  topReason / reasonByMachine 兩個資料表用來顯示「本日前五大錯誤」和「錯誤分析」中的圓餅圖，
+   *  defactByLotAndPart 用來顯示
    *
    *  @param    record    要處理的資料
    */
@@ -402,6 +403,16 @@ class MongoProcessor(mongoClient: MongoClient) {
         "mach_id"    -> record.machID,
         "mach_model" -> MachineInfo.getModel(record.machID),
         "mach_type"  -> MachineInfo.getMachineType(record.machID)
+      ), 
+      record = record
+    )
+
+    update(
+      tableName = "defactByLotAndPart", 
+      query = MongoDBObject(
+        "lotNo"   -> record.lotNo,
+        "partNo"  -> record.partNo,
+        "mach_id" -> record.machID
       ), 
       record = record
     )

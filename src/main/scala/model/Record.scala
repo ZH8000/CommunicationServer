@@ -7,6 +7,8 @@ import java.net.InetAddress
 import com.mongodb.casbah.Imports._
 import scala.util.Try
 import org.slf4j.LoggerFactory
+import com.mongodb.casbah.Imports._
+
 
 /**
  *  用來表示傳 RaspberryPi 傳回來的記錄資料的物件
@@ -80,16 +82,18 @@ case class Record(
    *  @return   若早班則為 M，晚班則為 N
    */
   def shift = {
+    val hostname = InetAddress.getLocalHost().getHostName()
     val calendar = Calendar.getInstance
-    calendar.setTime(new Date(embDate * 1000))
+
+    // 蘇州廠從 7:30 - 19:30 開始算一班，為了方便判斷，減去三十分鐘，則早晚班判斷方式可以和謝崗廠一樣
+    val timestamp = hostname match {
+      case "ZhenhaiServerSZ" => new Date(embDate * 1000 - 1000 * 60 * 30) 
+      case _                 => new Date(embDate * 1000)
+    }
+    calendar.setTime(timestamp)
     val hour = calendar.get(Calendar.HOUR_OF_DAY)
     val minute = calendar.get(Calendar.MINUTE)
-    val hostname = InetAddress.getLocalHost().getHostName()
-
-    val isDailyShift = hostname match {
-      case "ZhenhaiServerSZ" => (hour >= 7 && minute >= 30) && (hour <= 19 && minute < 30)
-      case _ => (hour >= 7 && hour < 19)
-    }
+    val isDailyShift = (hour >= 7 && hour < 19)
 
     if (isDailyShift) "M" else "N"
   }
@@ -260,7 +264,10 @@ object Record {
     }
   }
 
-
+  /**
+   *  處理有問題的
+   *
+   */
   def processLineWithBug(line: String) = Try {
 
     logger.info(s"[BUG LINE] $line")
@@ -268,6 +275,11 @@ object Record {
     val machineID = columns(9)
     val timestamp = columns(5).toLong
     val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
+    val workerID = columns(10).size >= 24 match {
+      case true  => columns(10).toLowerCase.take(24)
+      case false => findWorkerID(columns(10))
+    }
+
     new Record(
       columns(0), 
       columns(1) + " " + columns(2), 
@@ -291,6 +303,19 @@ object Record {
 
   }
 
+  val mongoClient = MongoClient("localhost")
+  val zhenhaiDB = mongoClient("zhenhai")
+  val workerTable = zhenhaiDB("worker")
+
+  def findWorkerID(factoryWorkerID: String): String = {
+    val mongoIDHolder = for {
+      record <- workerTable.findOne(MongoDBObject("workerID" -> factoryWorkerID.toUpperCase))
+      mongoID <- record._id.map(_.toString)
+    } yield mongoID
+
+    mongoIDHolder.getOrElse(factoryWorkerID)
+  }
+
   /**
    *  用來將由 RaspberryPi 傳來的原始資料轉換成 Record 物件
    *
@@ -302,6 +327,10 @@ object Record {
     val machineID = columns(8)
     val timestamp = columns(4).toLong
     val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
+    val workerID = columns(9).size >= 24 match {
+      case true  => columns(9).toLowerCase.take(24)
+      case false => findWorkerID(columns(9))
+    }
 
     new Record(
       columns(0), 
@@ -313,7 +342,7 @@ object Record {
       columns(6),
       columns(7).toLong,
       machineID,
-      columns(9).toLowerCase.take(24),
+      workerID,
       columns(10),
       columns(11),
       columns(12),
