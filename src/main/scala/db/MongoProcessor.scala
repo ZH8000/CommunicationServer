@@ -411,7 +411,6 @@ class MongoProcessor(mongoClient: MongoClient) {
       tableName = "defactByLotAndPart", 
       query = MongoDBObject(
         "lotNo"   -> record.lotNo,
-        "partNo"  -> record.partNo,
         "mach_id" -> record.machID
       ), 
       record = record
