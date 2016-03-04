@@ -20,12 +20,7 @@ class UpdateProductionStatus extends OrderedDBProcessor {
    *  @param    record    目前處理的資料物件
    */
   def updateProductionStatus(record: Record) {
-    val query = MongoDBObject(
-      "partNo" -> record.partNo,
-      "lotNo" -> record.lotNo,
-      "product" -> record.product
-    )
-
+    val query = MongoDBObject("lotNo" -> record.lotNo)
     val fieldName = MachineInfo.getMachineTypeID(record.machID) match {
       case 1 => "step1" // 加締
       case 2 => "step2" // 組立
@@ -39,6 +34,9 @@ class UpdateProductionStatus extends OrderedDBProcessor {
     zhenhaiDB("productionStatus").update(query, $set("lastUpdatedShifted" -> record.shiftDate))
     zhenhaiDB("productionStatus").update(query, $set(fieldName + "Status" -> record.machineStatus))
     zhenhaiDB("productionStatus").update(query, $set(fieldName + "Machine" -> record.machID))
+    zhenhaiDB("productionStatus").update(query, $set(fieldName + "Count" -> record.countQty))
+    zhenhaiDB("productionStatus").update(query, $set("workQty" -> record.workQty))
+    zhenhaiDB("productionStatus").update(query, $set("partNo" -> record.partNo))
     zhenhaiDB("productionStatus").ensureIndex(query.mapValues(x => 1))
   }
 
@@ -48,13 +46,7 @@ class UpdateProductionStatus extends OrderedDBProcessor {
    *  @param    record    目前處理的資料物件
    */
   def updateProductionHistoryStatus(record: Record) {
-    val query = MongoDBObject(
-      "partNo" -> record.partNo,
-      "lotNo" -> record.lotNo,
-      "product" -> record.product,
-      "shiftDate" -> record.shiftDate
-    )
-
+    val query = MongoDBObject("lotNo" -> record.lotNo, "shiftDate" -> record.shiftDate)
     val fieldName = MachineInfo.getMachineTypeID(record.machID) match {
       case 1 => "step1" // 加締
       case 2 => "step2" // 組立
@@ -66,6 +58,10 @@ class UpdateProductionStatus extends OrderedDBProcessor {
 
     zhenhaiDB("productionStatusHistory").update(query, $set(fieldName + "Status" -> record.machineStatus), upsert = true)
     zhenhaiDB("productionStatusHistory").update(query, $set(fieldName + "Machine" -> record.machID))
+    zhenhaiDB("productionStatusHistory").update(query, $set(fieldName + "Count" -> record.countQty))
+    zhenhaiDB("productionStatusHistory").update(query, $set(fieldName + "Count" -> record.countQty))
+    zhenhaiDB("productionStatusHistory").update(query, $set("workQty" -> record.workQty))
+    zhenhaiDB("productionStatusHistory").update(query, $set("partNo" -> record.partNo))
     zhenhaiDB("productionStatusHistory").ensureIndex(query.mapValues(x => 1))
   }
 
@@ -89,12 +85,7 @@ class UpdateProductionStatus extends OrderedDBProcessor {
       case _ => "unknownStep"
     }
 
-    val query = MongoDBObject(
-      "partNo" -> record.partNo,
-      "lotNo" -> record.lotNo,
-      "product" -> record.product,
-      "inputCount" -> record.workQty
-    )
+    val query = MongoDBObject("lotNo" -> record.lotNo)
 
     val orderStatusTable = zhenhaiDB("orderStatus")
     val lotDateTable = zhenhaiDB("lotDate")
@@ -108,6 +99,8 @@ class UpdateProductionStatus extends OrderedDBProcessor {
     zhenhaiDB("orderStatus").update(query, $inc(fieldName -> record.countQty), upsert = true)
     zhenhaiDB("orderStatus").update(query, $set("lastUpdated" -> record.embDate), upsert = true)
     zhenhaiDB("orderStatus").update(query, $set("customer" -> record.customer), upsert = true)
+    zhenhaiDB("orderStatus").update(query, $set("partNo" -> record.partNo), upsert = true)
+    zhenhaiDB("orderStatus").update(query, $set("inputCount" -> record.workQty), upsert = true)
 
     lotDateRecord.foreach { lotDate =>
       zhenhaiDB("orderStatus").update(query, $set("insertDate" -> lotDate("insertDate")), upsert = true)

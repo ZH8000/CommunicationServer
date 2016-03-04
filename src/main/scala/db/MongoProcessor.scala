@@ -535,13 +535,11 @@ class MongoProcessor(mongoClient: MongoClient) {
     val month = record.shiftDate.substring(0, 7)
     val tableName = s"workQty-$month"
     val operation = $set("workQty" -> record.workQty)
-    val query = MongoDBObject(
-      "lotNo" -> record.lotNo,
-      "partNo" -> record.partNo
-    )
+    val query = MongoDBObject("lotNo" -> record.lotNo)
 
     zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
     zhenhaiDB(tableName).update(query, operation, upsert = true)
+    zhenhaiDB(tableName).update(query, $set("partNo" -> record.partNo))
   }
 
   /**
