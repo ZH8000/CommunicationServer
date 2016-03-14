@@ -407,14 +407,53 @@ class MongoProcessor(mongoClient: MongoClient) {
       record = record
     )
 
-    update(
-      tableName = "defactByLotAndPart", 
-      query = MongoDBObject(
-        "lotNo"   -> record.lotNo,
-        "mach_id" -> record.machID
-      ), 
-      record = record
+    val defactCountAsLossSingal = Set(
+      0,     // 短路不良(計數)      
+      1,     // 素子卷取不良(計數)
+      2,     // 胶帯贴付不良(計數)  
+      3,     // 素子导线棒不良(計數)
+      201,   // 開路不良計數
+      202,   // 短路不良計數
+      203,   // LC不良計數
+      204,   // LC2不良計數
+      205,   // 容量不良計數
+      206,   // 損失不良計數
+      207,   // 重測不良計數
+      208    // 極性不良
     )
+
+    val eventCountAsLossSingal = Set(
+      102,   // 不良品累計數
+      107,   // 露白計數
+      108    // 不良品D計數
+    )
+
+    val shouldCountAsLoss = 
+      defactCountAsLossSingal.contains(record.defactID) ||
+      eventCountAsLossSingal.contains(record.otherEventID)
+
+   
+    if (shouldCountAsLoss) {
+      update(
+        tableName = "defactByLotNo", 
+        query = MongoDBObject(
+          "lotNo"   -> record.lotNo,
+          "mach_id" -> record.machID
+        ), 
+        record = record
+      )
+    }
+
+    if (record.otherEventID == 0) {
+      update(
+        tableName = "inputByLotNo", 
+        query = MongoDBObject(
+          "lotNo"   -> record.lotNo,
+          "mach_id" -> record.machID
+        ), 
+        record = record
+      )
+    }
   }
 
   /**
