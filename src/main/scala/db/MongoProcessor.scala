@@ -407,33 +407,44 @@ class MongoProcessor(mongoClient: MongoClient) {
       record = record
     )
 
-    val defactCountAsLossSingal = Set(
-      0,     // 短路不良(計數)      
-      1,     // 素子卷取不良(計數)
-      2,     // 胶帯贴付不良(計數)  
-      3,     // 素子导线棒不良(計數)
-      201,   // 開路不良計數
-      202,   // 短路不良計數
-      203,   // LC不良計數
-      204,   // LC2不良計數
-      205,   // 容量不良計數
-      206,   // 損失不良計數
-      207,   // 重測不良計數
-      208    // 極性不良
-    )
+  }
 
-    val eventCountAsLossSingal = Set(
-      102,   // 不良品累計數
-      107,   // 露白計數
-      108    // 不良品D計數
-    )
+  /**
+   *  更新 MongoDB 中的 dailyLossRate 資料表
+   *
+   *  此資料表用來實作「損耗查詢」頁面，此資料表會記錄每一工班日中的每一台機台，
+   *  其製作的每一張工單的良品數以及應該被算入損耗的不良品數。
+   *
+   */
+  def updateInputAndDefactByShiftDate(record: Record) {
 
-    val shouldCountAsLoss = 
-      defactCountAsLossSingal.contains(record.defactID) ||
-      eventCountAsLossSingal.contains(record.otherEventID)
+    if (record.shouldCountAsLoss || record.countQty > 0) {
 
-   
-    if (shouldCountAsLoss) {
+      val tableName = "dailyLossRate"
+      val query = MongoDBObject(
+        "shiftDate" -> record.shiftDate,
+        "machineID" -> record.machID,
+        "machineType" -> record.machineType,
+        "partNo"    -> record.partNo
+      )
+
+      val operation = $inc("event_qty" -> record.eventQty, "count_qty" -> record.countQty)
+      zhenhaiDB(tableName).ensureIndex(query.mapValues(x => 1))
+      zhenhaiDB(tableName).update(query, operation, upsert = true)
+
+    }
+  }
+
+  /**
+   *  更新 MongoDB 中的 defactByLotNo 資料表
+   *
+   *  此資料表記錄了每張工作中，每一台所使用到的機台的良品數以及被視為
+   *  損耗的不良品數。
+   *
+   */
+  def updateInputAndDefactByLotNo(record: Record) {
+
+    if (record.shouldCountAsLoss) {
       update(
         tableName = "defactByLotNo", 
         query = MongoDBObject(
@@ -812,13 +823,16 @@ class MongoProcessor(mongoClient: MongoClient) {
       // 不良事件
       if (record.eventQty > 0 && record.defactID != -1) {
         updateDefactReasonAndMachine(record)
+        updateInputAndDefactByLotNo(record)
       }
 
       // 其他統計事件
       if (record.otherEventID != -1) {
         updateOtherEvent(record)
+        updateInputAndDefactByLotNo(record)
       }
 
+      updateInputAndDefactByShiftDate(record)
       updateDailyRecord(record)
 
       if (record.machineStatus == ENTER_MAINTAIN || record.machineStatus == EXIT_MAINTAIN) {

@@ -73,8 +73,54 @@ case class Record(
    */
   def partNo = if (!isFromBarcode) "none" else rawPartNo
 
+  /**
+   *  在工廠哪個區域
+   */
   def area: String = MachineInfo.getMachineArea(this.machID)
+
+  /**
+   *  在工廠哪一樓
+   */
   def floor: Int = MachineInfo.getMachineFloor(this.machID)
+
+  /**
+   *  在 Record 裡的 defactID 欄位的 ID 如果是這幾個的話，代表
+   *  其為不良品計數，並且被工廠列為計算損耗時的考率項目。
+   */
+  val defactCountAsLossSingal = Set(
+    0,     // 短路不良(計數)      
+    1,     // 素子卷取不良(計數)
+    2,     // 胶帯贴付不良(計數)  
+    3,     // 素子导线棒不良(計數)
+    201,   // 開路不良計數
+    202,   // 短路不良計數
+    203,   // LC不良計數
+    204,   // LC2不良計數
+    205,   // 容量不良計數
+    206,   // 損失不良計數
+    207,   // 重測不良計數
+    208    // 極性不良
+  )
+
+  /**
+   *  由於歷史的共業，Record 裡的 otherEventID 實際上仍然含有
+   *  屬於不良品計數的資料，若 otherEventID 出現以下的代碼，
+   *  代表其為不良品計數，且被工廠列為為計算損耗時的考率項目。
+   */
+  val eventCountAsLossSingal = Set(
+    102,   // 不良品累計數
+    107,   // 露白計數
+    108    // 不良品D計數
+  )
+
+  /**
+   *  此筆資料是否該被當作損耗計算
+   */
+  def shouldCountAsLoss = {
+    defactCountAsLossSingal.contains(defactID) ||
+    eventCountAsLossSingal.contains(otherEventID)
+  }
+
 
   /**
    *  取得早班或晚班
@@ -223,6 +269,11 @@ object Record {
 
   implicit val logger = LoggerFactory.getLogger("DeQueueServer")
 
+  val mongoClient = MongoClient("localhost")
+  val zhenhaiDB = mongoClient("zhenhai")
+  val workerTable = zhenhaiDB("worker")
+
+
   /**
    *  將原始的時間戳記依照謝崗廠的換幫時間轉換成工班日期（減七個小時）
    *
@@ -303,10 +354,12 @@ object Record {
 
   }
 
-  val mongoClient = MongoClient("localhost")
-  val zhenhaiDB = mongoClient("zhenhai")
-  val workerTable = zhenhaiDB("worker")
-
+  /**
+   *  以台容的員工編號找到 MongoDB 資料庫中的員工編號的 Primary Key
+   *
+   *  @param    factoryWorkerID   台容的員工編號
+   *  @return                     MongoDB worker 資料表內相對應的 primary key
+   */
   def findWorkerID(factoryWorkerID: String): String = {
     val mongoIDHolder = for {
       record <- workerTable.findOne(MongoDBObject("workerID" -> factoryWorkerID.toUpperCase))
